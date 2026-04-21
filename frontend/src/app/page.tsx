@@ -90,10 +90,10 @@ export default function HomePage() {
         </Link>
 
         <Link
-          href="/intake"
+          href="https://github.com/tanishra/aarohi"
           className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,var(--primary),var(--primary-container))] px-5 py-2.5 text-sm font-semibold !text-white shadow-lg shadow-teal-900/15 transition-transform hover:-translate-y-0.5 [text-shadow:0_1px_1px_rgba(0,62,62,0.32)]"
         >
-          Start
+          GitHub
           <ArrowRight className="size-4" />
         </Link>
       </nav>
