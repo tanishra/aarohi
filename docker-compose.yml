@@ -1,0 +1,15 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - aarohi_data:/app/data
+    env_file:
+      - ./backend/.env
+    environment:
+      - DB_PATH=/app/data/aarohi_intake.db
+    restart: always
+
+volumes:
+  aarohi_data:

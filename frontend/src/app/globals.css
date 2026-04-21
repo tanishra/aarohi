@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light !important;
+  --font-inter:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --font-manrope:
+    "Avenir Next", "Segoe UI", Inter, ui-sans-serif, system-ui, sans-serif;
+  --background: #f8fafa;
+  --foreground: #191c1d;
+  --primary: #008080;
+  --primary-container: #006565;
+  --primary-fixed: #93f2f2;
+  --surface-low: #f2f4f4;
+  --surface-lowest: #ffffff;
+  --medical-teal: #008080;
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-container: var(--primary-container);
+  --color-primary-fixed: var(--primary-fixed);
+  --color-surface-low: var(--surface-low);
+  --color-surface-lowest: var(--surface-lowest);
+  --color-medical-teal: var(--medical-teal);
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #f8fafa;
+    --foreground: #191c1d;
+    --surface-low: #f2f4f4;
+    --surface-lowest: #ffffff;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Inter", sans-serif;
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.lk-bar-visualizer {
+  gap: 0.35rem;
+}
+
+.lk-bar-visualizer__bar {
+  border-radius: 9999px;
+}
