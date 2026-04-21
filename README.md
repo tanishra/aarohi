@@ -1,6 +1,6 @@
 <div align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0D1117,100:2D333B&height=180&section=header&text=Aarohi&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=38" alt="Aarohi Header Banner" />
-  <p><strong>Aarohi: Production-Grade Virtual AI Nurse Assistant</strong></p>
+  <p><strong>Aarohi: Virtual AI Nurse Assistant</strong></p>
   <p>An interactive technical asset engineered to showcase low-latency voice orchestration, 3D avatar synchronization, and complex clinical agentic workflows.</p>
   <p>
     <a href="https://nextjs.org/" target="_blank" rel="noreferrer">
