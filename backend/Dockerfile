@@ -32,9 +32,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy the source code
 COPY . .
 
+# Pre-download machine learning models (Turn Detector, etc.)
+# This ensures the model_q8.onnx file is baked into the image
+RUN python main.py download-files
+
 # Expose the Flask port
 EXPOSE 8080
 
 # Run both the Token Server and the Agent Worker
-# We use 'sh -c' to start the server in the background and the agent in the foreground
 CMD ["sh", "-c", "python token_server.py & python main.py dev"]
