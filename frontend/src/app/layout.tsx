@@ -4,7 +4,7 @@ import "@livekit/components-styles";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Aarohi – AI Patient Intake Assistant",
+  title: "Aarohi",
   description:
     "Experience the future of patient registration with Aarohi, an AI-powered nurse assistant by Aarogyam AI.",
 };
