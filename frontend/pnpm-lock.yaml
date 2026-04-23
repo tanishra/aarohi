@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@livekit/components-react':
         specifier: ^2.0.0
-        version: 2.9.20(livekit-client@2.18.4(@types/dom-mediacapture-record@1.0.22))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tslib@2.8.1)
+        version: 2.9.20(livekit-client@2.16.1(@types/dom-mediacapture-record@1.0.22))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tslib@2.8.1)
       '@livekit/components-styles':
         specifier: ^1.1.6
         version: 1.2.0
@@ -19,7 +19,7 @@ importers:
         version: 1.0.0-beta.75(@webgpu/types@0.1.69)(vite@5.4.21(@types/node@20.19.39)(lightningcss@1.32.0))
       '@spatialwalk/avatarkit-rtc':
         specifier: 1.0.0-beta.7
-        version: 1.0.0-beta.7(@spatialwalk/avatarkit@1.0.0-beta.75(@webgpu/types@0.1.69)(vite@5.4.21(@types/node@20.19.39)(lightningcss@1.32.0)))(agora-rtc-sdk-ng@4.24.3)(livekit-client@2.18.4(@types/dom-mediacapture-record@1.0.22))
+        version: 1.0.0-beta.7(@spatialwalk/avatarkit@1.0.0-beta.75(@webgpu/types@0.1.69)(vite@5.4.21(@types/node@20.19.39)(lightningcss@1.32.0)))(agora-rtc-sdk-ng@4.24.3)(livekit-client@2.16.1(@types/dom-mediacapture-record@1.0.22))
       agora-rtc-sdk-ng:
         specifier: ^4.24.3
         version: 4.24.3
@@ -27,8 +27,8 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       livekit-client:
-        specifier: ^2.17.2
-        version: 2.18.4(@types/dom-mediacapture-record@1.0.22)
+        specifier: 2.16.1
+        version: 2.16.1(@types/dom-mediacapture-record@1.0.22)
       livekit-server-sdk:
         specifier: 2.14.0
         version: 2.14.0
@@ -569,9 +569,6 @@ packages:
 
   '@livekit/protocol@1.42.2':
     resolution: {integrity: sha512-0jeCwoMJKcwsZICg5S6RZM4xhJoF78qMvQELjACJQn6/VB+jmiySQKOSELTXvPBVafHfEbMlqxUw2UR1jTXs2g==}
-
-  '@livekit/protocol@1.45.3':
-    resolution: {integrity: sha512-WmMxBTsy4dRBqcrswFwUUlgq3Z0nnhOqKR6tX749Rb/PcB1yBMUtrHxZvcsS6qi3/5+86zHeVG+exmu1sZqfJg==}
 
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
@@ -2038,8 +2035,8 @@ packages:
     resolution: {integrity: sha512-NXYBzinNrblfraPGyrbPoD19C1h9lfI/1mzgWYvXUTe414Gz/X1FD2XBZSZM7rRTrMA8JL3OtAaGifrIKhQ5yQ==}
     engines: {node: '>= 12.0.0'}
 
-  livekit-client@2.18.4:
-    resolution: {integrity: sha512-kjbH9WdA85gZNqFiAMY9jKJ3HArk8F+AQvAvSE5N6PnY+wNCV9OYe9yeb9BVezZiD6ltGyB3CkTxGyuX6BXYAw==}
+  livekit-client@2.16.1:
+    resolution: {integrity: sha512-PmOHiGdkzw2P/t0vLbJRwHU59+T+JcFlGTYDV7PObWmzvypIij1Vlj0WhZKDZ/Ac7CvwWinbiGCVw/Pb/OiYYw==}
     peerDependencies:
       '@types/dom-mediacapture-record': ^1
 
@@ -2512,6 +2509,9 @@ packages:
     engines: {node: '>=18.12'}
     peerDependencies:
       typescript: '>=4.8.4'
+
+  ts-debounce@4.0.0:
+    resolution: {integrity: sha512-+1iDGY6NmOGidq7i7xZGA4cm8DAa6fqdYcvO5Z6yBevH++Bdo9Qt/mN0TzHUgcCcKv1gmh9+W5dHqz8pMWbCbg==}
 
   tsconfig-paths@3.15.0:
     resolution: {integrity: sha512-2Ac2RgzDe/cn48GvOe3M+o82pEFewD3UPbyoUHHdKasHwJKjds4fLXWf/Ux5kATBKN20oaFGu+jbElp1pos0mg==}
@@ -3095,21 +3095,21 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@livekit/components-core@0.12.13(livekit-client@2.18.4(@types/dom-mediacapture-record@1.0.22))(tslib@2.8.1)':
+  '@livekit/components-core@0.12.13(livekit-client@2.16.1(@types/dom-mediacapture-record@1.0.22))(tslib@2.8.1)':
     dependencies:
       '@floating-ui/dom': 1.7.4
-      livekit-client: 2.18.4(@types/dom-mediacapture-record@1.0.22)
+      livekit-client: 2.16.1(@types/dom-mediacapture-record@1.0.22)
       loglevel: 1.9.1
       rxjs: 7.8.2
       tslib: 2.8.1
 
-  '@livekit/components-react@2.9.20(livekit-client@2.18.4(@types/dom-mediacapture-record@1.0.22))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tslib@2.8.1)':
+  '@livekit/components-react@2.9.20(livekit-client@2.16.1(@types/dom-mediacapture-record@1.0.22))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(tslib@2.8.1)':
     dependencies:
-      '@livekit/components-core': 0.12.13(livekit-client@2.18.4(@types/dom-mediacapture-record@1.0.22))(tslib@2.8.1)
+      '@livekit/components-core': 0.12.13(livekit-client@2.16.1(@types/dom-mediacapture-record@1.0.22))(tslib@2.8.1)
       clsx: 2.1.1
       events: 3.3.0
       jose: 6.2.1
-      livekit-client: 2.18.4(@types/dom-mediacapture-record@1.0.22)
+      livekit-client: 2.16.1(@types/dom-mediacapture-record@1.0.22)
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
       tslib: 2.8.1
@@ -3120,10 +3120,6 @@ snapshots:
   '@livekit/mutex@1.1.1': {}
 
   '@livekit/protocol@1.42.2':
-    dependencies:
-      '@bufbuild/protobuf': 1.10.1
-
-  '@livekit/protocol@1.45.3':
     dependencies:
       '@bufbuild/protobuf': 1.10.1
 
@@ -3358,13 +3354,13 @@ snapshots:
 
   '@rtsao/scc@1.1.0': {}
 
-  '@spatialwalk/avatarkit-rtc@1.0.0-beta.7(@spatialwalk/avatarkit@1.0.0-beta.75(@webgpu/types@0.1.69)(vite@5.4.21(@types/node@20.19.39)(lightningcss@1.32.0)))(agora-rtc-sdk-ng@4.24.3)(livekit-client@2.18.4(@types/dom-mediacapture-record@1.0.22))':
+  '@spatialwalk/avatarkit-rtc@1.0.0-beta.7(@spatialwalk/avatarkit@1.0.0-beta.75(@webgpu/types@0.1.69)(vite@5.4.21(@types/node@20.19.39)(lightningcss@1.32.0)))(agora-rtc-sdk-ng@4.24.3)(livekit-client@2.16.1(@types/dom-mediacapture-record@1.0.22))':
     dependencies:
       '@bufbuild/protobuf': 2.11.0
       '@spatialwalk/avatarkit': 1.0.0-beta.75(@webgpu/types@0.1.69)(vite@5.4.21(@types/node@20.19.39)(lightningcss@1.32.0))
     optionalDependencies:
       agora-rtc-sdk-ng: 4.24.3
-      livekit-client: 2.18.4(@types/dom-mediacapture-record@1.0.22)
+      livekit-client: 2.16.1(@types/dom-mediacapture-record@1.0.22)
 
   '@spatialwalk/avatarkit@1.0.0-beta.75(@webgpu/types@0.1.69)(vite@5.4.21(@types/node@20.19.39)(lightningcss@1.32.0))':
     dependencies:
@@ -4664,15 +4660,16 @@ snapshots:
       lightningcss-win32-arm64-msvc: 1.32.0
       lightningcss-win32-x64-msvc: 1.32.0
 
-  livekit-client@2.18.4(@types/dom-mediacapture-record@1.0.22):
+  livekit-client@2.16.1(@types/dom-mediacapture-record@1.0.22):
     dependencies:
       '@livekit/mutex': 1.1.1
-      '@livekit/protocol': 1.45.3
+      '@livekit/protocol': 1.42.2
       '@types/dom-mediacapture-record': 1.0.22
       events: 3.3.0
       jose: 6.2.1
       loglevel: 1.9.2
       sdp-transform: 2.15.0
+      ts-debounce: 4.0.0
       tslib: 2.8.1
       typed-emitter: 2.1.0
       webrtc-adapter: 9.0.5
@@ -5241,6 +5238,8 @@ snapshots:
   ts-api-utils@2.5.0(typescript@5.9.3):
     dependencies:
       typescript: 5.9.3
+
+  ts-debounce@4.0.0: {}
 
   tsconfig-paths@3.15.0:
     dependencies:
