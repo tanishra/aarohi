@@ -16,7 +16,7 @@
     "@spatialwalk/avatarkit-rtc": "1.0.0-beta.7",
     "agora-rtc-sdk-ng": "^4.24.3",
     "clsx": "^2.1.1",
-    "livekit-client": "^2.17.2",
+    "livekit-client": "2.16.1",
     "livekit-server-sdk": "2.14.0",
     "lucide-react": "^0.577.0",
     "next": "16.2.4",
