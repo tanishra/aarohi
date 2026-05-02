@@ -1,0 +1,6 @@
+## Overview
+This PR implements the frontend enhancements outlined in the project analysis report:
+
+1. **Strict Environment Variable Validation**: Abstracted env vars into src/env.ts to ensure the app fails fast if required SpatialReal IDs are missing.
+2. **State Management Migration**: Replaced brittle sessionStorage with a robust zustand global store for handling the final intake summary data between the Intake and Success pages.
+3. **Unique Session Identifiers**: Swapped Date.now() with crypto.randomUUID() to prevent any possible collision of LiveKit room names and participant IDs.

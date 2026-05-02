@@ -1,4 +1,6 @@
 "use client";
+import { useIntakeStore } from "@/store/useIntakeStore";
+import { env } from "@/env";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -47,8 +49,6 @@ type ExtractionUpdatePayload = {
   message?: string;
   type?: string;
 };
-
-const SUCCESS_STORAGE_KEY = "aarohi-intake-summary";
 
 type TranscriptMessage = {
   id: string;
@@ -398,25 +398,20 @@ function ActiveSession({
 
 export default function IntakePage() {
   const router = useRouter();
-  const appId = process.env.NEXT_PUBLIC_SPATIALREAL_APP_ID;
-  const avatarId = process.env.NEXT_PUBLIC_SPATIALREAL_AVATAR_ID;
+  const appId = env.appId;
+  const avatarId = env.avatarId;
 
   const [connection, setConnection] = useState<TokenConnection | null>(null);
   const [loading, setLoading] = useState(false);
-  const [roomName] = useState(() => `intake-${Date.now()}`);
+  const [roomName] = useState(() => `intake-${crypto.randomUUID()}`);
   const [isRegistrationComplete, setIsRegistrationComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const connect = useCallback(async () => {
-    if (!appId || !avatarId) {
-      setError("Missing NEXT_PUBLIC_SPATIALREAL_APP_ID or NEXT_PUBLIC_SPATIALREAL_AVATAR_ID in frontend/.env");
-      return;
-    }
-
     setLoading(true);
     setError(null);
     try {
-      const participantName = `patient-${Date.now()}`;
+      const participantName = `patient-${crypto.randomUUID()}`;
       const result = await getToken(roomName, participantName);
       setConnection(result);
     } catch (connectError) {
