@@ -1,17 +1,28 @@
-import asyncio
 from datetime import timedelta
 from uuid import uuid4
+import os
 
-from flask import Flask, jsonify, request
-from flask_cors import CORS
+from fastapi import FastAPI, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from livekit import api
 
 from config.settings import load_settings
 
-app = Flask(__name__)
-CORS(app)
+app = FastAPI()
 
 settings = load_settings()
+
+# Secure CORS: Default to localhost in dev, but allow configuration via ENV
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 async def create_room_and_dispatch(room_name: str) -> None:
@@ -34,14 +45,18 @@ async def create_room_and_dispatch(room_name: str) -> None:
         await lkapi.aclose()
 
 
-@app.route("/token", methods=["POST"])
-def token():
-    body = request.get_json() or {}
-    room_name = body.get("room", settings.agent.default_room)
-    requested_identity = body.get("identity")
+class TokenRequest(BaseModel):
+    room: str | None = None
+    identity: str | None = None
+
+
+@app.post("/token")
+async def token(request: TokenRequest, background_tasks: BackgroundTasks):
+    room_name = request.room or settings.agent.default_room
+
     identity = (
-        requested_identity.strip()
-        if isinstance(requested_identity, str) and requested_identity.strip()
+        request.identity.strip()
+        if request.identity and request.identity.strip()
         else f"browser-{uuid4().hex[:8]}"
     )
 
@@ -62,21 +77,16 @@ def token():
         .to_jwt()
     )
 
-    try:
-        asyncio.run(create_room_and_dispatch(room_name))
-    except Exception as exc:
-        # Keep returning token so frontend can still connect for debugging.
-        print(f"Warning: Failed to dispatch agent: {exc}")
+    background_tasks.add_task(create_room_and_dispatch, room_name)
 
-    return jsonify(
-        {
-            "token": jwt,
-            "url": settings.livekit.url,
-            "room": room_name,
-            "identity": identity,
-        }
-    )
+    return {
+        "token": jwt,
+        "url": settings.livekit.url,
+        "room": room_name,
+        "identity": identity,
+    }
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    import uvicorn
+    uvicorn.run("token_server:app", host="0.0.0.0", port=8080, reload=True)

@@ -24,7 +24,6 @@ class AarohiTools:
             now = datetime.now(ZoneInfo(timezone))
             return now.strftime("%A, %B %d, %Y, %I:%M %p %Z")
         except Exception:
-            # Fallback to UTC if timezone is invalid
             now = datetime.now(ZoneInfo("UTC"))
             return now.strftime("%A, %B %d, %Y, %I:%M %p %Z")
 
@@ -34,8 +33,8 @@ class AarohiTools:
         patient_name: str,
         chief_complaint: str,
         symptom_duration: str,
-        severity_score: str,
-        age: str = "Unknown",
+        severity_score: int,
+        age: int = 0,
         gender: str = "Not specified",
         contact_number: str = "Not provided",
         medications: str = "None",
@@ -46,8 +45,8 @@ class AarohiTools:
         :param patient_name: Full name of the patient.
         :param chief_complaint: The main health concern.
         :param symptom_duration: How long the symptoms have lasted.
-        :param severity_score: Pain or discomfort level (e.g. '5/10').
-        :param age: Age of the patient.
+        :param severity_score: Pain or discomfort level strictly as an integer from 1 to 10.
+        :param age: Age of the patient as an integer. Use 0 if unknown.
         :param gender: Gender of the patient.
         :param contact_number: Patient's phone or contact info.
         :param medications: Any current medications.
@@ -55,34 +54,31 @@ class AarohiTools:
         """
         logger.info(f"Finalizing intake for: {patient_name}")
         
-        # Prepare data for DB and Frontend
         data = {
             "patient_name": patient_name,
-            "age": age,
+            "age": str(age) if age > 0 else "Unknown",
             "gender": gender,
             "contact_number": contact_number,
             "chief_complaint": chief_complaint,
             "symptom_duration": symptom_duration,
-            "severity_score": severity_score,
+            "severity_score": f"{severity_score}/10",
             "current_medications": medications,
             "known_conditions": known_conditions
         }
         
-        # Attempt to save to SQLite
         success = save_intake({
             "name": patient_name,
-            "age": 0 if age == "Unknown" else int(''.join(filter(str.isdigit, age)) or 0),
+            "age": age,
             "gender": gender,
             "contact": contact_number,
             "complaint": chief_complaint,
             "duration": symptom_duration,
-            "severity": int(''.join(filter(str.isdigit, severity_score)) or 0),
+            "severity": severity_score,
             "medications": medications,
             "conditions": known_conditions
         })
 
         if success:
-            # Send the signal that triggers the Frontend Success Page redirect
             payload = json.dumps({
                 "type": "intake_finished",
                 "all_data": data,
