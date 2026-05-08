@@ -127,8 +127,8 @@ pnpm dev
 ---
 
 ## What Aarohi Does
-- **Structured Intake:** Methodically collects Name, Symptoms, Pain Severity, and Medical History.
-- **Autonomous DB Submission:** Automatically saves patient reports to an SQL database once the conversation is complete.
+- **Structured Intake:** Collects Name, Symptoms, Pain Severity, and Medical History.
+- **Autonomous DB Submission:** Automatically saves patient reports to database once the conversation is completed.
 - **State-Driven UI:** Automatically redirects users to a success page after data validation.
 - **Real-Time Knowledge:** Provides current date/time and location-aware information using tools.
 
