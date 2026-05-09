@@ -1,4 +1,5 @@
 "use client";
+import { useIntakeStore } from "@/store/useIntakeStore";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -9,8 +10,6 @@ import {
   ShieldCheck,
   UserRoundCheck,
 } from "lucide-react";
-
-const SUCCESS_STORAGE_KEY = "aarohi-intake-summary";
 
 const detailLabels: Record<string, string> = {
   patient_name: "Full Name",
@@ -42,22 +41,7 @@ const nextSteps = [
 ];
 
 export default function SuccessPage() {
-  const [summary] = useState<Record<string, string>>(() => {
-    if (typeof window === "undefined") {
-      return {};
-    }
-
-    const raw = sessionStorage.getItem(SUCCESS_STORAGE_KEY);
-    if (!raw) {
-      return {};
-    }
-
-    try {
-      return JSON.parse(raw) as Record<string, string>;
-    } catch {
-      return {};
-    }
-  });
+  const summary = useIntakeStore((state) => state.summary);
 
   const summaryEntries = Object.entries(summary).filter(([, value]) => value);
 
