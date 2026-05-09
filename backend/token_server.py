@@ -1,6 +1,8 @@
 from datetime import timedelta
 from uuid import uuid4
 import os
+import asyncio
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,10 +10,29 @@ from pydantic import BaseModel
 from livekit import api
 
 from config.settings import load_settings
-
-app = FastAPI()
+from core.database import sync_local_to_cloud
 
 settings = load_settings()
+
+async def background_sync_task():
+    """Runs the database sync job every 60 seconds while the server is alive."""
+    while True:
+        try:
+            # We wrap the synchronous SQLAlchemy call in a thread using asyncio.to_thread
+            await asyncio.to_thread(sync_local_to_cloud)
+        except Exception as e:
+            print(f"Background sync error: {e}")
+        await asyncio.sleep(60)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Start the background sync task
+    task = asyncio.create_task(background_sync_task())
+    yield
+    # Shutdown: Cancel the task
+    task.cancel()
+
+app = FastAPI(lifespan=lifespan)
 
 # Secure CORS: Default to localhost in dev, but allow configuration via ENV
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
