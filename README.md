@@ -34,7 +34,7 @@
 ```mermaid
 graph TD
     User((Patient)) <-->|WebRTC Voice/Video| Frontend[Next.js Frontend]
-    Frontend <-->|POST /token| TokenServer[Flask Token Server]
+    Frontend <-->|POST /token| TokenServer[FastAPI Token Server]
     TokenServer -->|Dispatch| AgentWorker[LiveKit AI Agent]
     
     subgraph "The Brain"
@@ -111,9 +111,12 @@ Visit [SpatialReal Studio](https://app.spatialreal.ai/) to create your free acco
 ```bash
 cd backend
 uv sync
-# Ensure your .env contains OPENAI_API_KEY, DEEPGRAM_API_KEY, and LIVEKIT credentials
+# Ensure your .env contains:
+# OPENAI_API_KEY, DEEPGRAM_API_KEY, LIVEKIT credentials
+# CLOUD_DB_URL (optional PostgreSQL connection string)
+# ENCRYPTION_SECRET_KEY (for PII data encryption)
 uv run python main.py dev
-uv run python token_server.py dev
+uv run uvicorn token_server:app --port 8080
 ```
 
 ### 2. Frontend (Next.js)
@@ -126,9 +129,16 @@ pnpm dev
 
 ---
 
+
+## Advanced Architectural Features
+- **Cloud-First Database with Local Fallback:** Uses `SQLModel` to attempt saving data to a cloud PostgreSQL database first. If the cloud is down, it safely falls back to a local SQLite database and automatically syncs the records in the background when the cloud recovers.
+- **Application-Level PII Encryption:** Sensitive patient data (Protected Health Information) is symmetrically encrypted in memory using `cryptography` before being saved to the database, ensuring zero-knowledge at rest.
+- **Strict Data Validation:** Utilizes strict Pydantic schemas within the AI Agent to force the LLM to output cleanly typed integers and enums, avoiding fragile string-parsing hacks.
+- **Robust State Management:** The Next.js frontend uses `zustand` for reliable, cross-navigation global state management.
+
 ## What Aarohi Does
-- **Structured Intake:** Methodically collects Name, Symptoms, Pain Severity, and Medical History.
-- **Autonomous DB Submission:** Automatically saves patient reports to an SQL database once the conversation is complete.
+- **Structured Intake:** Collects Name, Symptoms, Pain Severity, and Medical History.
+- **Autonomous DB Submission:** Automatically saves patient reports to database once the conversation is completed.
 - **State-Driven UI:** Automatically redirects users to a success page after data validation.
 - **Real-Time Knowledge:** Provides current date/time and location-aware information using tools.
 
