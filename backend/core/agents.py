@@ -24,9 +24,31 @@ class AarohiTools:
             now = datetime.now(ZoneInfo(timezone))
             return now.strftime("%A, %B %d, %Y, %I:%M %p %Z")
         except Exception:
-            # Fallback to UTC if timezone is invalid
             now = datetime.now(ZoneInfo("UTC"))
             return now.strftime("%A, %B %d, %Y, %I:%M %p %Z")
+
+
+    @llm.function_tool(description="Updates the visual progress bar on the user's screen. Call this tool silently whenever you have successfully gathered new information from the patient.")
+    async def update_progress_ui(self, completed_fields: list[str]) -> str:
+        """
+        Sends a progress update to the frontend UI.
+        :param completed_fields: A list of strings representing the fields you have gathered so far. Valid options are EXACTLY: ["Name", "Age/Gender", "Contact", "Symptoms", "Duration/Severity", "History"]
+        """
+        payload = json.dumps({
+            "type": "progress_update",
+            "completed": completed_fields
+        })
+
+        try:
+            await self.job_ctx.room.local_participant.publish_data(
+                payload=payload,
+                topic="extraction_update"
+            )
+            logger.info(f"Progress UI updated: {completed_fields}")
+            return "SUCCESS: Progress UI updated."
+        except Exception as e:
+            logger.error(f"Progress signal failed: {e}")
+            return "ERROR: Failed to update UI."
 
     @llm.function_tool(description="Submit the final patient intake report to the clinic database. Call this immediately after providing the verbal summary.")
     async def submit_intake_report(
@@ -34,8 +56,8 @@ class AarohiTools:
         patient_name: str,
         chief_complaint: str,
         symptom_duration: str,
-        severity_score: str,
-        age: str = "Unknown",
+        severity_score: int,
+        age: int = 0,
         gender: str = "Not specified",
         contact_number: str = "Not provided",
         medications: str = "None",
@@ -46,8 +68,8 @@ class AarohiTools:
         :param patient_name: Full name of the patient.
         :param chief_complaint: The main health concern.
         :param symptom_duration: How long the symptoms have lasted.
-        :param severity_score: Pain or discomfort level (e.g. '5/10').
-        :param age: Age of the patient.
+        :param severity_score: Pain or discomfort level strictly as an integer from 1 to 10.
+        :param age: Age of the patient as an integer. Use 0 if unknown.
         :param gender: Gender of the patient.
         :param contact_number: Patient's phone or contact info.
         :param medications: Any current medications.
@@ -55,34 +77,31 @@ class AarohiTools:
         """
         logger.info(f"Finalizing intake for: {patient_name}")
         
-        # Prepare data for DB and Frontend
         data = {
             "patient_name": patient_name,
-            "age": age,
+            "age": str(age) if age > 0 else "Unknown",
             "gender": gender,
             "contact_number": contact_number,
             "chief_complaint": chief_complaint,
             "symptom_duration": symptom_duration,
-            "severity_score": severity_score,
+            "severity_score": f"{severity_score}/10",
             "current_medications": medications,
             "known_conditions": known_conditions
         }
         
-        # Attempt to save to SQLite
         success = save_intake({
             "name": patient_name,
-            "age": 0 if age == "Unknown" else int(''.join(filter(str.isdigit, age)) or 0),
+            "age": age,
             "gender": gender,
             "contact": contact_number,
             "complaint": chief_complaint,
             "duration": symptom_duration,
-            "severity": int(''.join(filter(str.isdigit, severity_score)) or 0),
+            "severity": severity_score,
             "medications": medications,
             "conditions": known_conditions
         })
 
         if success:
-            # Send the signal that triggers the Frontend Success Page redirect
             payload = json.dumps({
                 "type": "intake_finished",
                 "all_data": data,
@@ -109,12 +128,14 @@ class IntakeAgent(Agent):
             instructions=get_aarohi_instructions(),
             tools=[
                 self._aarohi_tools.get_date_time,
-                self._aarohi_tools.submit_intake_report
+                self._aarohi_tools.submit_intake_report,
+                self._aarohi_tools.update_progress_ui
             ]
         )
 
     def get_tool_list(self):
         return [
             self._aarohi_tools.get_date_time,
-            self._aarohi_tools.submit_intake_report
+            self._aarohi_tools.submit_intake_report,
+            self._aarohi_tools.update_progress_ui
         ]
