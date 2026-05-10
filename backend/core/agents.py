@@ -27,6 +27,29 @@ class AarohiTools:
             now = datetime.now(ZoneInfo("UTC"))
             return now.strftime("%A, %B %d, %Y, %I:%M %p %Z")
 
+
+    @llm.function_tool(description="Updates the visual progress bar on the user's screen. Call this tool silently whenever you have successfully gathered new information from the patient.")
+    async def update_progress_ui(self, completed_fields: list[str]) -> str:
+        """
+        Sends a progress update to the frontend UI.
+        :param completed_fields: A list of strings representing the fields you have gathered so far. Valid options are EXACTLY: ["Name", "Age/Gender", "Contact", "Symptoms", "Duration/Severity", "History"]
+        """
+        payload = json.dumps({
+            "type": "progress_update",
+            "completed": completed_fields
+        })
+
+        try:
+            await self.job_ctx.room.local_participant.publish_data(
+                payload=payload,
+                topic="extraction_update"
+            )
+            logger.info(f"Progress UI updated: {completed_fields}")
+            return "SUCCESS: Progress UI updated."
+        except Exception as e:
+            logger.error(f"Progress signal failed: {e}")
+            return "ERROR: Failed to update UI."
+
     @llm.function_tool(description="Submit the final patient intake report to the clinic database. Call this immediately after providing the verbal summary.")
     async def submit_intake_report(
         self,
@@ -105,12 +128,14 @@ class IntakeAgent(Agent):
             instructions=get_aarohi_instructions(),
             tools=[
                 self._aarohi_tools.get_date_time,
-                self._aarohi_tools.submit_intake_report
+                self._aarohi_tools.submit_intake_report,
+                self._aarohi_tools.update_progress_ui
             ]
         )
 
     def get_tool_list(self):
         return [
             self._aarohi_tools.get_date_time,
-            self._aarohi_tools.submit_intake_report
+            self._aarohi_tools.submit_intake_report,
+            self._aarohi_tools.update_progress_ui
         ]

@@ -1,6 +1,7 @@
 "use client";
 import { useIntakeStore } from "@/store/useIntakeStore";
 import { env } from "@/env";
+import { ProgressBar } from "@/components/ProgressBar";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
