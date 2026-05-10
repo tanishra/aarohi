@@ -105,25 +105,46 @@ Visit [SpatialReal Studio](https://app.spatialreal.ai/) to create your free acco
 
 ---
 
-## Quick Setup
+## Deployment & Quick Setup
 
-### 1. Backend (Python 3.12+)
+### Option A: Docker (Recommended for Production)
+Aarohi is fully containerized. You can spin up the entire stack (Frontend, FastAPI Token Server, and LiveKit Agent Worker) using Docker Compose.
+
+1. Create a `.env` file in the root directory (or update `backend/.env` and `frontend/.env`):
+   ```env
+   # Backend
+   OPENAI_API_KEY=your_key
+   DEEPGRAM_API_KEY=your_key
+   LIVEKIT_URL=your_url
+   LIVEKIT_API_KEY=your_key
+   LIVEKIT_API_SECRET=your_secret
+   ENCRYPTION_SECRET_KEY=your_encryption_key
+   CLOUD_DB_URL=postgresql://... # Optional
+
+   # Frontend
+   NEXT_PUBLIC_SPATIALREAL_APP_ID=your_app_id
+   NEXT_PUBLIC_SPATIALREAL_AVATAR_ID=your_avatar_id
+   ```
+2. Build and start the cluster:
+   ```bash
+   docker-compose up --build -d
+   ```
+3. Visit `http://localhost:3000`
+
+### Option B: Manual Local Development
+
+#### 1. Backend (Python 3.12+)
 ```bash
 cd backend
 uv sync
-# Ensure your .env contains:
-# OPENAI_API_KEY, DEEPGRAM_API_KEY, LIVEKIT credentials
-# CLOUD_DB_URL (optional PostgreSQL connection string)
-# ENCRYPTION_SECRET_KEY (for PII data encryption)
 uv run python main.py dev
 uv run uvicorn token_server:app --port 8080
 ```
 
-### 2. Frontend (Next.js)
+#### 2. Frontend (Next.js)
 ```bash
 cd frontend
 pnpm install
-# Ensure .env contains NEXT_PUBLIC_SPATIALREAL_APP_ID and AVATAR_ID
 pnpm dev
 ```
 
