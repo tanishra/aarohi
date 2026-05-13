@@ -1,6 +1,23 @@
+version: '3.8'
+
 services:
-  backend:
-    build: ./backend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_SPATIALREAL_APP_ID=${NEXT_PUBLIC_SPATIALREAL_APP_ID}
+      - NEXT_PUBLIC_SPATIALREAL_AVATAR_ID=${NEXT_PUBLIC_SPATIALREAL_AVATAR_ID}
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    restart: unless-stopped
+
+  backend-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["uvicorn", "token_server:app", "--host", "0.0.0.0", "--port", "8080"]
     ports:
       - "8080:8080"
     volumes:
@@ -8,8 +25,24 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      - DB_PATH=/app/data/aarohi_intake.db
-    restart: always
+      - LOCAL_DB_PATH=/app/data/aarohi_fallback.db
+      - ALLOWED_ORIGINS=http://localhost:3000,http://frontend:3000
+    restart: unless-stopped
+
+  backend-agent:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["python", "main.py", "start"]
+    volumes:
+      - aarohi_data:/app/data
+    env_file:
+      - ./backend/.env
+    environment:
+      - LOCAL_DB_PATH=/app/data/aarohi_fallback.db
+    restart: unless-stopped
+    depends_on:
+      - backend-api
 
 volumes:
   aarohi_data:

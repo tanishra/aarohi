@@ -70,7 +70,16 @@ async def entrypoint(ctx: JobContext) -> None:
         ),
         vad=silero.VAD.load(),
         turn_handling=TurnHandlingOptions(
-            turn_detection=MultilingualModel(),
+            turn_detection=MultilingualModel(
+                # Faster endpointing when user stops speaking
+                endpointing_timeout=0.8,
+            ),
+            # Enable agent to stop speaking if user interrupts
+            allow_interruptions=True,
+            # Ignore very short noises (coughs, sighs) to avoid false interruptions
+            interruption_speech_duration=0.3,
+            # Instantly yield the floor to the user
+            interruption_delay=0.1,
         ),
         # Removed redundant tools registration here as they are inside the agent
         max_tool_steps=5, # Allow more steps if summary + submission are handled
