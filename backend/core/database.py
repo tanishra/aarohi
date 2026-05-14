@@ -47,7 +47,14 @@ def init_db():
         SQLModel.metadata.create_all(engine_local)
         logger.info(f"Local fallback database initialized at {LOCAL_DB_PATH}")
     except Exception as e:
-        logger.error(f"Error initializing local database: {e}")
+        logger.error(f"Error initializing database: {e}")
+
+    if engine_cloud:
+        try:
+            SQLModel.metadata.create_all(engine_cloud)
+            logger.info("Cloud database initialized successfully.")
+        except Exception as e:
+            logger.warning(f"Could not initialize cloud database tables (might be unreachable): {e}")
 
     if engine_cloud:
         try:
