@@ -23,8 +23,13 @@ if CLOUD_DB_URL:
         logger.error(f"Failed to initialize cloud engine. Will use local fallback. Error: {e}")
 
 # --- Models ---
+class Clinic(SQLModel, table=True):
+    id: str = Field(primary_key=True, description="The unique username or ID of the clinic")
+    hashed_password: str
+
 class PatientIntake(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
+    clinic_id: str = Field(foreign_key="clinic.id")
     name: str
     age: int
     gender: str
@@ -42,7 +47,7 @@ def init_db():
         SQLModel.metadata.create_all(engine_local)
         logger.info(f"Local fallback database initialized at {LOCAL_DB_PATH}")
     except Exception as e:
-        logger.error(f"Error initializing database: {e}")
+        logger.error(f"Error initializing local database: {e}")
 
     if engine_cloud:
         try:
@@ -51,8 +56,20 @@ def init_db():
         except Exception as e:
             logger.warning(f"Could not initialize cloud database tables (might be unreachable): {e}")
 
-def save_intake(data: dict) -> bool:
-    """Saves intake data. Tries cloud first, falls back to local."""
+    # Create a default admin clinic if none exists (for demo/zero-cost setup)
+    from passlib.context import CryptContext
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+    with Session(engine_local) as session:
+        admin = session.get(Clinic, "admin")
+        if not admin:
+            hashed = pwd_context.hash("admin123")
+            session.add(Clinic(id="admin", hashed_password=hashed))
+            session.commit()
+            logger.info("Default clinic 'admin' created with password 'admin123'")
+
+def save_intake(data: dict, clinic_id: str = "admin") -> bool:
+    """Saves intake data for a specific clinic. Tries cloud first, falls back to local."""
     try:
         # Encrypt PII
         encrypted_data = data.copy()
@@ -61,6 +78,9 @@ def save_intake(data: dict) -> bool:
         if "contact" in encrypted_data:
             encrypted_data["contact"] = encrypt_data(str(encrypted_data["contact"]))
 
+        # Inject clinic_id
+        encrypted_data["clinic_id"] = clinic_id
+
         # Try Cloud DB First
         if engine_cloud:
             try:
@@ -68,7 +88,7 @@ def save_intake(data: dict) -> bool:
                 with Session(engine_cloud) as session:
                     session.add(intake)
                     session.commit()
-                logger.info(f"Intake report saved successfully to CLOUD database.")
+                logger.info(f"Intake report saved successfully to CLOUD database for clinic {clinic_id}.")
                 return True
             except Exception as e:
                 logger.warning(f"Cloud DB failed. Falling back to local. Error: {e}")
@@ -78,7 +98,7 @@ def save_intake(data: dict) -> bool:
         with Session(engine_local) as session:
             session.add(intake_fallback)
             session.commit()
-        logger.info(f"Intake report saved to LOCAL fallback database with status 'pending'.")
+        logger.info(f"Intake report saved to LOCAL fallback database with status 'pending' for clinic {clinic_id}.")
         return True
 
     except Exception as e:

@@ -11,8 +11,9 @@ from .database import save_intake
 logger = logging.getLogger(__name__)
 
 class AarohiTools:
-    def __init__(self, job_ctx: JobContext):
+    def __init__(self, job_ctx: JobContext, clinic_id: str):
         self.job_ctx = job_ctx
+        self.clinic_id = clinic_id
 
     @llm.function_tool(description="Provides current date and time knowledge. Use this to tell the user the current date and time in a specific timezone. Defaults to UTC.")
     async def get_date_time(self, timezone: str = "UTC") -> str:
@@ -26,7 +27,6 @@ class AarohiTools:
         except Exception:
             now = datetime.now(ZoneInfo("UTC"))
             return now.strftime("%A, %B %d, %Y, %I:%M %p %Z")
-
 
     @llm.function_tool(description="Updates the visual progress bar on the user's screen. Call this tool silently whenever you have successfully gathered new information from the patient.")
     async def update_progress_ui(self, completed_fields: list[str]) -> str:
@@ -75,7 +75,7 @@ class AarohiTools:
         :param medications: Any current medications.
         :param known_conditions: Any existing medical conditions.
         """
-        logger.info(f"Finalizing intake for: {patient_name}")
+        logger.info(f"Finalizing intake for: {patient_name} at clinic {self.clinic_id}")
         
         data = {
             "patient_name": patient_name,
@@ -99,7 +99,7 @@ class AarohiTools:
             "severity": severity_score,
             "medications": medications,
             "conditions": known_conditions
-        })
+        }, clinic_id=self.clinic_id)
 
         if success:
             payload = json.dumps({
@@ -123,7 +123,13 @@ class AarohiTools:
 
 class IntakeAgent(Agent):
     def __init__(self, job_ctx: JobContext) -> None:
-        self._aarohi_tools = AarohiTools(job_ctx)
+        # Extract clinic_id from room name (formatted as clinicid_roomid)
+        room_name = job_ctx.room.name
+        clinic_id = "admin" # fallback
+        if "_" in room_name:
+            clinic_id = room_name.split("_")[0]
+
+        self._aarohi_tools = AarohiTools(job_ctx, clinic_id)
         super().__init__(
             instructions=get_aarohi_instructions(),
             tools=[

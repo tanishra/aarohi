@@ -1,4 +1,5 @@
 "use server";
+import { cookies } from "next/headers";
 
 type TokenPayload = {
   identity: string;
@@ -41,4 +42,41 @@ export async function getToken(roomName: string, participantName: string) {
   }
 
   return payload as TokenPayload;
+}
+
+export async function loginAction(username: string, password: string) {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+  const formData = new URLSearchParams();
+  formData.append('username', username);
+  formData.append('password', password);
+
+  try {
+    const response = await fetch(`${apiUrl}/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: formData.toString(),
+    });
+
+    if (!response.ok) {
+      return { error: "Invalid credentials." };
+    }
+
+    const data = await response.json();
+
+    // Store token securely in an HTTP-only cookie
+    const cookieStore = await cookies();
+    cookieStore.set('aarohi_token', data.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24, // 1 day
+      path: '/',
+    });
+
+    return { success: true };
+  } catch (e) {
+    return { error: "Failed to connect to server." };
+  }
 }
