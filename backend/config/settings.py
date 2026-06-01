@@ -42,6 +42,18 @@ class DeepgramConfig:
 
 
 @dataclass(frozen=True)
+class SarvamConfig:
+    api_key: str
+    model: str
+    speaker: str
+    target_language_code: str
+    sample_rate: int
+    pace: float
+    temperature: float
+    base_url: str
+
+
+@dataclass(frozen=True)
 class SpatialRealConfig:
     enabled: bool = True
 
@@ -57,6 +69,7 @@ class Settings:
     livekit: LiveKitConfig
     openai: OpenAIConfig
     deepgram: DeepgramConfig
+    sarvam: SarvamConfig
     spatialreal: SpatialRealConfig
     agent: AgentConfig
 
@@ -79,6 +92,17 @@ def load_settings() -> Settings:
             stt_model=optional("STT_MODEL", "nova-3") or "nova-3",
             stt_language=optional("STT_LANGUAGE", "multi") or "multi",
             tts_model=optional("TTS_VOICE", "aura-asteria-en") or "aura-asteria-en",
+        ),
+        sarvam=SarvamConfig(
+            api_key=require("SARVAM_API_KEY"),
+            model=optional("SARVAM_TTS_MODEL", "bulbul:v3") or "bulbul:v3",
+            speaker=optional("SARVAM_TTS_SPEAKER", "priya") or "priya",
+            target_language_code=optional("SARVAM_TTS_LANGUAGE", "auto") or "auto",
+            sample_rate=int(optional("SARVAM_TTS_SAMPLE_RATE", "24000") or "24000"),
+            pace=float(optional("SARVAM_TTS_PACE", "0.92") or "0.92"),
+            temperature=float(optional("SARVAM_TTS_TEMPERATURE", "0.6") or "0.6"),
+            base_url=optional("SARVAM_TTS_URL", "https://api.sarvam.ai/text-to-speech")
+            or "https://api.sarvam.ai/text-to-speech",
         ),
         spatialreal=SpatialRealConfig(
             enabled=(optional("SPATIALREAL_ENABLED", "true") or "true").lower() != "false",

@@ -7,6 +7,7 @@ from config.settings import load_settings
 from core.agents import IntakeAgent
 from core.context import SessionContext
 from core.database import init_db
+from core.sarvam_tts import SarvamTTS
 
 from livekit import agents
 from livekit.agents import (
@@ -64,9 +65,15 @@ async def entrypoint(ctx: JobContext) -> None:
             api_key=settings.openai.api_key,
             parallel_tool_calls=False, # Force sequential for reliable nurse workflow
         ),
-        tts=deepgram.TTS(
-            model=settings.deepgram.tts_model,
-            api_key=settings.deepgram.api_key,
+        tts=SarvamTTS(
+            api_key=settings.sarvam.api_key,
+            model=settings.sarvam.model,
+            speaker=settings.sarvam.speaker,
+            target_language_code=settings.sarvam.target_language_code,
+            sample_rate=settings.sarvam.sample_rate,
+            pace=settings.sarvam.pace,
+            temperature=settings.sarvam.temperature,
+            base_url=settings.sarvam.base_url,
         ),
         vad=silero.VAD.load(),
         turn_handling=TurnHandlingOptions(
