@@ -51,6 +51,38 @@ export async function getToken(roomName: string, participantName: string) {
   return payload as TokenPayload;
 }
 
+export async function logoutAction() {
+  const cookieStore = await cookies();
+  cookieStore.delete('aarohi_token');
+  return { success: true };
+}
+
+export async function registerAction(username: string, password: string) {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+  try {
+    const response = await fetch(`${apiUrl}/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (response.status === 409) {
+      return { error: "A clinic with this ID already exists." };
+    }
+
+    if (!response.ok) {
+      return { error: "Registration failed. Username must be at least 3 characters and password at least 6." };
+    }
+
+    return { success: true };
+  } catch (e) {
+    return { error: "Failed to connect to server." };
+  }
+}
+
 export async function loginAction(username: string, password: string) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 

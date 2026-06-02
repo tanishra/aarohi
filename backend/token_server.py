@@ -4,18 +4,23 @@ import os
 import asyncio
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException, status
+from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from livekit import api
 from sqlmodel import Session
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from config.settings import load_settings
 from core.database import sync_local_to_cloud, engine_local, Clinic
-from core.auth import verify_password, create_access_token, get_current_clinic_id, ACCESS_TOKEN_EXPIRE_MINUTES
+from core.auth import verify_password, get_password_hash, create_access_token, get_current_clinic_id, ACCESS_TOKEN_EXPIRE_MINUTES
 
 settings = load_settings()
+
+limiter = Limiter(key_func=get_remote_address)
 
 async def background_sync_task():
     """Runs the database sync job every 60 seconds while the server is alive."""
@@ -33,6 +38,8 @@ async def lifespan(app: FastAPI):
     task.cancel()
 
 app = FastAPI(lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 
@@ -49,8 +56,46 @@ class TokenRequest(BaseModel):
     identity: str | None = None
     clinic_id: str | None = None
 
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+
+    @field_validator("username")
+    @classmethod
+    def username_min_length(cls, v: str) -> str:
+        stripped = v.strip()
+        if len(stripped) < 3:
+            raise ValueError("Username must be at least 3 characters")
+        return stripped
+
+    @field_validator("password")
+    @classmethod
+    def password_min_length(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("Password must be at least 6 characters")
+        return v
+
+@app.post("/register")
+async def register(body: RegisterRequest):
+    """Create a new clinic account."""
+    with Session(engine_local) as session:
+        existing = session.get(Clinic, body.username)
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A clinic with this ID already exists",
+            )
+
+        hashed = get_password_hash(body.password)
+        clinic = Clinic(id=body.username, hashed_password=hashed)
+        session.add(clinic)
+        session.commit()
+
+    return {"message": f"Clinic '{body.username}' registered successfully"}
+
 @app.post("/login")
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+@limiter.limit("5/minute")
+async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
     """Authenticate clinic and return a JWT."""
     with Session(engine_local) as session:
         clinic = session.get(Clinic, form_data.username)

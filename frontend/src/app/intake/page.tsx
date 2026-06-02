@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { RoomEvent, type Participant } from "livekit-client";
 
-import { getToken } from "../actions";
+import { getToken, logoutAction } from "../actions";
 import {
   SpatialRealAvatarCanvas,
   SpatialRealAvatarError,
@@ -463,12 +463,24 @@ export default function IntakePage() {
             </div>
           </Link>
 
-          <Link
-            href="/"
-            className="rounded-full bg-[linear-gradient(135deg,var(--primary),var(--primary-container))] px-4 py-2 text-sm font-semibold !text-white shadow-lg shadow-teal-900/15 [text-shadow:0_1px_1px_rgba(0,62,62,0.32)]"
-          >
-            Back Home
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="rounded-full border border-black/10 bg-white/80 px-4 py-2 text-sm font-semibold text-black/65 shadow-sm"
+            >
+              Home
+            </Link>
+            <button
+              type="button"
+              onClick={async () => {
+                await logoutAction();
+                router.push("/login");
+              }}
+              className="rounded-full bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 shadow-sm hover:bg-rose-100"
+            >
+              Logout
+            </button>
+          </div>
         </nav>
 
         <section className="flex min-h-[calc(100vh-80px)] items-center justify-center px-6 py-12 sm:px-10">

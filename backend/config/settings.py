@@ -72,6 +72,7 @@ class Settings:
     sarvam: SarvamConfig
     spatialreal: SpatialRealConfig
     agent: AgentConfig
+    jwt_secret_key: str
 
 
 def load_settings() -> Settings:
@@ -112,4 +113,5 @@ def load_settings() -> Settings:
             default_room=optional("DEFAULT_ROOM_NAME", "voice-agent-room") or "voice-agent-room",
             language=optional("DEFAULT_LANGUAGE", "en") or "en",
         ),
+        jwt_secret_key=require("JWT_SECRET_KEY"),
     )

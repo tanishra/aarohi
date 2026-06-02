@@ -2,6 +2,7 @@
 import { useIntakeStore } from "@/store/useIntakeStore";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   CheckCircle2,
@@ -10,6 +11,7 @@ import {
   ShieldCheck,
   UserRoundCheck,
 } from "lucide-react";
+import { logoutAction } from "@/app/actions";
 
 const detailLabels: Record<string, string> = {
   patient_name: "Full Name",
@@ -41,6 +43,7 @@ const nextSteps = [
 ];
 
 export default function SuccessPage() {
+  const router = useRouter();
   const summary = useIntakeStore((state) => state.summary);
 
   const summaryEntries = Object.entries(summary).filter(([, value]) => value);
@@ -66,12 +69,24 @@ export default function SuccessPage() {
           </div>
         </Link>
 
-        <Link
-          href="/"
-          className="rounded-full border border-black/10 bg-white/80 px-4 py-2 text-sm font-semibold text-black/65 shadow-sm"
-        >
-          Home
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="rounded-full border border-black/10 bg-white/80 px-4 py-2 text-sm font-semibold text-black/65 shadow-sm"
+          >
+            Home
+          </Link>
+          <button
+            type="button"
+            onClick={async () => {
+              await logoutAction();
+              router.push("/login");
+            }}
+            className="rounded-full bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 shadow-sm hover:bg-rose-100"
+          >
+            Logout
+          </button>
+        </div>
       </nav>
 
       <section className="flex min-h-[calc(100vh-80px)] items-center justify-center px-6 py-12 sm:px-10">

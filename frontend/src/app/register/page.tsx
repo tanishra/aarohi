@@ -4,26 +4,43 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { HeartPulse, LoaderCircle, TriangleAlert } from "lucide-react";
 import Link from "next/link";
-import { loginAction } from "@/app/actions";
+import { registerAction } from "@/app/actions";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    if (username.trim().length < 3) {
+      setError("Username must be at least 3 characters.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const result = await loginAction(username, password);
+      const result = await registerAction(username, password);
       if (result.error) {
         setError(result.error);
       } else {
-        router.push("/intake");
+        router.push("/login");
       }
     } catch (err) {
       setError("An unexpected error occurred.");
@@ -49,10 +66,10 @@ export default function LoginPage() {
         </div>
 
         <h1 className="mb-2 text-center text-2xl font-semibold tracking-tight">
-          Clinic Login
+          Register Clinic
         </h1>
         <p className="mb-8 text-center text-sm text-black/60">
-          Sign in to access your AI patient intake portal.
+          Create a new clinic account for AI patient intake.
         </p>
 
         {error ? (
@@ -76,6 +93,7 @@ export default function LoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full rounded-xl border border-black/10 bg-[var(--surface-low)] px-4 py-3 outline-none focus:border-[var(--primary)]"
+              placeholder="e.g. myclinic"
               required
             />
           </div>
@@ -92,6 +110,24 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-xl border border-black/10 bg-[var(--surface-low)] px-4 py-3 outline-none focus:border-[var(--primary)]"
+              placeholder="At least 6 characters"
+              required
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="confirmPassword"
+              className="mb-2 block text-sm font-medium text-black/70"
+            >
+              Confirm Password
+            </label>
+            <input
+              id="confirmPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full rounded-xl border border-black/10 bg-[var(--surface-low)] px-4 py-3 outline-none focus:border-[var(--primary)]"
+              placeholder="Repeat password"
               required
             />
           </div>
@@ -103,15 +139,15 @@ export default function LoginPage() {
             {loading ? (
               <LoaderCircle className="size-5 animate-spin" />
             ) : (
-              "Sign In"
+              "Create Account"
             )}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-black/50">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="font-semibold text-[var(--primary)] hover:underline">
-            Register here
+          Already have an account?{" "}
+          <Link href="/login" className="font-semibold text-[var(--primary)] hover:underline">
+            Sign In
           </Link>
         </p>
       </div>

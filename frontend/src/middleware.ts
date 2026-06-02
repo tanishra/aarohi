@@ -10,8 +10,8 @@ export default function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // If user is logged in but tries to access login page
-  if (token && request.nextUrl.pathname.startsWith('/login')) {
+  // If user is logged in but tries to access login or register page
+  if (token && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/register'))) {
       return NextResponse.redirect(new URL('/intake', request.url));
   }
 
@@ -19,5 +19,5 @@ export default function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/intake', '/success', '/login'],
+  matcher: ['/intake', '/success', '/login', '/register'],
 };

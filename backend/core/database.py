@@ -56,18 +56,6 @@ def init_db():
         except Exception as e:
             logger.warning(f"Could not initialize cloud database tables (might be unreachable): {e}")
 
-    # Create a default admin clinic if none exists (for demo/zero-cost setup)
-    from passlib.context import CryptContext
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-    with Session(engine_local) as session:
-        admin = session.get(Clinic, "admin")
-        if not admin:
-            hashed = pwd_context.hash("admin123")
-            session.add(Clinic(id="admin", hashed_password=hashed))
-            session.commit()
-            logger.info("Default clinic 'admin' created with password 'admin123'")
-
 def save_intake(data: dict, clinic_id: str = "admin") -> bool:
     """Saves intake data for a specific clinic. Tries cloud first, falls back to local."""
     try:
