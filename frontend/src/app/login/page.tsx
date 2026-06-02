@@ -37,7 +37,7 @@ export default function LoginPage() {
     <main className="relative flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
       <Link
         href="/"
-        className="absolute left-6 top-6 inline-flex items-center gap-1.5 rounded-full bg-[linear-gradient(135deg,var(--primary),var(--primary-container))] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-teal-900/15 transition-transform hover:-translate-y-0.5"
+        className="absolute left-6 top-6 inline-flex items-center gap-1.5 rounded-full bg-[linear-gradient(135deg,var(--primary),var(--primary-container))] px-4 py-2 text-sm font-semibold !text-white shadow-lg shadow-teal-900/15 transition-transform hover:-translate-y-0.5"
       >
         <ArrowLeft className="size-4" />
         Home
