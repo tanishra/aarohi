@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { HeartPulse, LoaderCircle, TriangleAlert } from "lucide-react";
 import Link from "next/link";
@@ -33,7 +34,14 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
+    <main className="relative flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
+      <Link
+        href="/"
+        className="absolute left-6 top-6 inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white/80 px-4 py-2 text-sm font-semibold text-black/65 shadow-sm transition-colors hover:bg-white"
+      >
+        <ArrowLeft className="size-4" />
+        Home
+      </Link>
       <div className="w-full max-w-md rounded-[2rem] border border-white/70 bg-white/75 p-8 shadow-2xl shadow-teal-950/8 backdrop-blur-sm sm:p-12">
         <div className="mb-8 flex items-center justify-center gap-3">
           <HeartPulse className="h-10 w-10 text-[var(--primary)]" />
