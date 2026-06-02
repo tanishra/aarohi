@@ -19,12 +19,19 @@ function getBackendTokenEndpoint() {
 
 export async function getToken(roomName: string, participantName: string) {
   const endpoint = getBackendTokenEndpoint();
+  const cookieStore = await cookies();
+  const token = cookieStore.get("aarohi_token")?.value;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
 
   const response = await fetch(endpoint, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     cache: "no-store",
     body: JSON.stringify({
       room: roomName,

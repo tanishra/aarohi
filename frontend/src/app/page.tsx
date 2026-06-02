@@ -133,7 +133,7 @@ export default function HomePage() {
 
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <Link
-                href="/intake"
+                href="/login"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,var(--primary),var(--primary-container))] px-7 py-3.5 text-base font-semibold !text-white shadow-xl shadow-teal-900/15 transition-transform hover:-translate-y-0.5 [text-shadow:0_1px_1px_rgba(0,62,62,0.32)]"
               >
                 Start Registration Now
@@ -255,7 +255,7 @@ export default function HomePage() {
           </div>
 
           <Link
-            href="/intake"
+            href="/login"
             className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 font-semibold !text-[#0f3f3f] shadow-lg transition-transform hover:-translate-y-0.5"
           >
             Start Registration Now
