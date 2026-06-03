@@ -12,8 +12,8 @@
   "dependencies": {
     "@livekit/components-react": "^2.0.0",
     "@livekit/components-styles": "^1.1.6",
-    "@spatialwalk/avatarkit": "1.0.0-beta.75",
-    "@spatialwalk/avatarkit-rtc": "1.0.0-beta.7",
+    "@spatius/avatarkit": "1.0.0",
+    "@spatius/avatarkit-rtc": "1.0.0",
     "agora-rtc-sdk-ng": "^4.24.3",
     "clsx": "^2.1.1",
     "cookie": "^1.1.1",

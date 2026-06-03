@@ -7,10 +7,8 @@ import {
   AvatarSDK,
   AvatarView,
   DrivingServiceMode,
-  Environment,
-  LoadProgress,
-} from "@spatialwalk/avatarkit";
-import { AvatarPlayer, LiveKitProvider } from "@spatialwalk/avatarkit-rtc";
+} from "@spatius/avatarkit";
+import { AvatarPlayer, LiveKitProvider } from "@spatius/avatarkit-rtc";
 import { TokenSource, Track } from "livekit-client";
 import type { Room } from "livekit-client";
 
@@ -25,87 +23,23 @@ function toError(error: unknown, fallbackMessage: string) {
   return error instanceof Error ? error : new Error(fallbackMessage);
 }
 
-function normalizeAvatarAssetUrl(input: string): string {
-  if (input.endsWith("avatar_core_wasm.js")) {
-    return "/avatar_core_wasm.js";
-  }
-
-  if (input.endsWith("avatar_core_wasm-e68766db.wasm")) {
-    return "/avatar_core_wasm-e68766db.wasm";
-  }
-
-  return input;
-}
-
-function installAvatarAssetFallbacks() {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  const fetchKey = "__aarohiAvatarFetchPatched";
-  const xhrKey = "__aarohiAvatarXhrPatched";
-  const globalWindow = window as Window & {
-    [fetchKey]?: boolean;
-    [xhrKey]?: boolean;
-  };
-
-  if (!globalWindow[fetchKey]) {
-    const originalFetch = window.fetch.bind(window);
-    window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
-      if (typeof input === "string") {
-        return originalFetch(normalizeAvatarAssetUrl(input), init);
-      }
-
-      if (input instanceof URL) {
-        return originalFetch(new URL(normalizeAvatarAssetUrl(input.toString()), window.location.origin), init);
-      }
-
-      return originalFetch(input, init);
-    }) as typeof window.fetch;
-    globalWindow[fetchKey] = true;
-  }
-
-  if (!globalWindow[xhrKey]) {
-    const originalOpen = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function (
-      method: string,
-      url: string | URL,
-      async?: boolean,
-      username?: string | null,
-      password?: string | null,
-    ) {
-      const normalizedUrl =
-        typeof url === "string"
-          ? normalizeAvatarAssetUrl(url)
-          : new URL(normalizeAvatarAssetUrl(url.toString()), window.location.origin);
-
-      return originalOpen.call(this, method, normalizedUrl, async ?? true, username ?? null, password ?? null);
-    };
-    globalWindow[xhrKey] = true;
-  }
-}
-
 function sameSdkConfiguration(options: UseSpatialRealAvatarOptions) {
   const configuration = AvatarSDK.configuration;
 
   return (
     AvatarSDK.appId === options.appId &&
-    configuration?.environment === (options.environment ?? Environment.intl) &&
     configuration?.drivingServiceMode ===
       (options.drivingServiceMode ?? DrivingServiceMode.host) &&
-    configuration?.characterApiBaseUrl === options.characterApiBaseUrl &&
+    configuration?.customEndpoint === options.characterApiBaseUrl &&
     configuration?.logLevel === options.sdkLogLevel
   );
 }
 
 async function ensureAvatarSdk(options: UseSpatialRealAvatarOptions) {
-  installAvatarAssetFallbacks();
-
-  if (!AvatarSDK.isInitialized) {
+  if (!AvatarSDK.appId) {
     await AvatarSDK.initialize(options.appId, {
-      characterApiBaseUrl: options.characterApiBaseUrl,
       drivingServiceMode: options.drivingServiceMode ?? DrivingServiceMode.host,
-      environment: options.environment ?? Environment.intl,
+      customEndpoint: options.characterApiBaseUrl,
       logLevel: options.sdkLogLevel,
     });
   } else if (!sameSdkConfiguration(options)) {
@@ -146,7 +80,6 @@ export function useSpatialRealAvatar(
     connection,
     drivingServiceMode,
     enabled = true,
-    environment,
     onAvatarError,
     onConnected,
     onDisconnected,
@@ -477,7 +410,6 @@ export function useSpatialRealAvatar(
             url,
           },
           drivingServiceMode,
-          environment,
           sdkLogLevel,
           sessionToken,
           userId,
@@ -492,9 +424,9 @@ export function useSpatialRealAvatar(
           setState((previous) => ({
             ...previous,
             downloadProgress:
-              progress.type === LoadProgress.downloading
+              progress.type === "downloading"
                 ? progress.progress ?? null
-                : progress.type === LoadProgress.completed
+                : progress.type === "completed"
                   ? 1
                   : previous.downloadProgress,
           }));
@@ -565,7 +497,6 @@ export function useSpatialRealAvatar(
     containerReady,
     drivingServiceMode,
     enabled,
-    environment,
     roomName,
     sdkLogLevel,
     sessionToken,

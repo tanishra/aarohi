@@ -1,10 +1,9 @@
 import type {
   DrivingServiceMode,
-  Environment,
   LoadProgressInfo,
   LogLevel as AvatarSdkLogLevel,
-} from "@spatialwalk/avatarkit";
-import type { AvatarPlayerOptions } from "@spatialwalk/avatarkit-rtc";
+} from "@spatius/avatarkit";
+import type { AvatarPlayerOptions } from "@spatius/avatarkit-rtc";
 import type { UseSessionReturn } from "@livekit/components-react";
 import type { Room, Track } from "livekit-client";
 
@@ -27,7 +26,6 @@ interface SpatialRealAvatarSdkOptions {
   avatarId: string;
   characterApiBaseUrl?: string;
   drivingServiceMode?: DrivingServiceMode;
-  environment?: Environment;
   sessionToken?: string;
   sdkLogLevel?: AvatarSdkLogLevel;
   userId?: string;
