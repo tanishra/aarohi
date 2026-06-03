@@ -15,7 +15,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from config.settings import load_settings
-from core.database import sync_local_to_cloud, engine_local, Clinic
+from core.database import init_db, sync_local_to_cloud, engine_local, Clinic
 from core.auth import verify_password, get_password_hash, create_access_token, get_current_clinic_id, ACCESS_TOKEN_EXPIRE_MINUTES
 
 settings = load_settings()
@@ -33,6 +33,7 @@ async def background_sync_task():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    init_db()
     task = asyncio.create_task(background_sync_task())
     yield
     task.cancel()

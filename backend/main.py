@@ -15,9 +15,13 @@ from livekit.agents import (
     AgentSession,
     AutoSubscribe,
     JobContext,
-    TurnHandlingOptions,
     room_io,
     cli,
+)
+from livekit.agents.voice.turn import (
+    EndpointingOptions,
+    InterruptionOptions,
+    TurnHandlingOptions,
 )
 from livekit.plugins import deepgram, openai, silero, ai_coustics, google
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
@@ -77,16 +81,16 @@ async def entrypoint(ctx: JobContext) -> None:
         ),
         vad=silero.VAD.load(),
         turn_handling=TurnHandlingOptions(
-            turn_detection=MultilingualModel(
-                # Faster endpointing when user stops speaking
-                endpointing_timeout=0.8,
+            turn_detection=MultilingualModel(),
+            endpointing=EndpointingOptions(
+                mode="fixed",
+                min_delay=0.8,
             ),
-            # Enable agent to stop speaking if user interrupts
-            allow_interruptions=True,
-            # Ignore very short noises (coughs, sighs) to avoid false interruptions
-            interruption_speech_duration=0.3,
-            # Instantly yield the floor to the user
-            interruption_delay=0.1,
+            interruption=InterruptionOptions(
+                enabled=True,
+                min_duration=0.3,
+                min_words=1,
+            ),
         ),
         # Removed redundant tools registration here as they are inside the agent
         max_tool_steps=5, # Allow more steps if summary + submission are handled
