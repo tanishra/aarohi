@@ -54,7 +54,7 @@ class SarvamConfig:
 
 
 @dataclass(frozen=True)
-class SpatialRealConfig:
+class SpatiusConfig:
     enabled: bool = True
 
 @dataclass(frozen=True)
@@ -70,7 +70,7 @@ class Settings:
     openai: OpenAIConfig
     deepgram: DeepgramConfig
     sarvam: SarvamConfig
-    spatialreal: SpatialRealConfig
+    spatius: SpatiusConfig
     agent: AgentConfig
     jwt_secret_key: str
 
@@ -105,8 +105,8 @@ def load_settings() -> Settings:
             base_url=optional("SARVAM_TTS_URL", "https://api.sarvam.ai/text-to-speech")
             or "https://api.sarvam.ai/text-to-speech",
         ),
-        spatialreal=SpatialRealConfig(
-            enabled=(optional("SPATIALREAL_ENABLED", "true") or "true").lower() != "false",
+        spatius=SpatiusConfig(
+            enabled=(optional("SPATIUS_ENABLED", "true") or "true").lower() != "false",
         ),
         agent=AgentConfig(
             name=optional("LIVEKIT_AGENT_NAME", "voice-assistant") or "voice-assistant",

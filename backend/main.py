@@ -21,7 +21,7 @@ from livekit.agents import (
 )
 from livekit.plugins import deepgram, openai, silero, ai_coustics, google
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
-from livekit.plugins.spatialreal import AvatarSession
+from livekit.plugins.spatius import AvatarSession
 
 # Load environment variables from .env
 load_dotenv()
@@ -94,7 +94,7 @@ async def entrypoint(ctx: JobContext) -> None:
     )
 
     # 4. Attach SpatialReal Avatar
-    if settings.spatialreal.enabled:
+    if settings.spatius.enabled:
         try:
             avatar = AvatarSession()
             await avatar.start(session, room=ctx.room)
