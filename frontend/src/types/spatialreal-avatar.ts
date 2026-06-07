@@ -24,10 +24,10 @@ export interface SpatialRealAvatarConnection {
 interface SpatialRealAvatarSdkOptions {
   appId: string;
   avatarId: string;
-  characterApiBaseUrl?: string;
+  customEndpoint?: string;
   drivingServiceMode?: DrivingServiceMode;
-  sessionToken?: string;
   sdkLogLevel?: AvatarSdkLogLevel;
+  sdkRegion?: string;
   userId?: string;
 }
 

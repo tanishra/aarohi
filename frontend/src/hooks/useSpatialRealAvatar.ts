@@ -28,9 +28,10 @@ function sameSdkConfiguration(options: UseSpatialRealAvatarOptions) {
 
   return (
     AvatarSDK.appId === options.appId &&
+    configuration?.region === (options.sdkRegion ?? "us-west") &&
     configuration?.drivingServiceMode ===
       (options.drivingServiceMode ?? DrivingServiceMode.host) &&
-    configuration?.customEndpoint === options.characterApiBaseUrl &&
+    configuration?.customEndpoint === options.customEndpoint &&
     configuration?.logLevel === options.sdkLogLevel
   );
 }
@@ -38,18 +39,15 @@ function sameSdkConfiguration(options: UseSpatialRealAvatarOptions) {
 async function ensureAvatarSdk(options: UseSpatialRealAvatarOptions) {
   if (!AvatarSDK.appId) {
     await AvatarSDK.initialize(options.appId, {
+      region: options.sdkRegion ?? "us-west",
       drivingServiceMode: options.drivingServiceMode ?? DrivingServiceMode.host,
-      customEndpoint: options.characterApiBaseUrl,
+      customEndpoint: options.customEndpoint,
       logLevel: options.sdkLogLevel,
     });
   } else if (!sameSdkConfiguration(options)) {
     throw new Error(
       "AvatarSDK is already initialized with a different configuration. Keep appId and SDK options stable across mounted SpatialReal avatar providers.",
     );
-  }
-
-  if (options.sessionToken) {
-    AvatarSDK.setSessionToken(options.sessionToken);
   }
 
   if (options.userId) {
@@ -76,7 +74,7 @@ export function useSpatialRealAvatar(
   const {
     appId,
     avatarId,
-    characterApiBaseUrl,
+    customEndpoint,
     connection,
     drivingServiceMode,
     enabled = true,
@@ -88,7 +86,7 @@ export function useSpatialRealAvatar(
     playerOptions,
     publishMicrophone = false,
     sdkLogLevel,
-    sessionToken,
+    sdkRegion,
     userId,
   } = options;
   const { roomName, token, url } = connection;
@@ -403,7 +401,7 @@ export function useSpatialRealAvatar(
         await ensureAvatarSdk({
           appId,
           avatarId,
-          characterApiBaseUrl,
+          customEndpoint,
           connection: {
             roomName,
             token,
@@ -411,7 +409,7 @@ export function useSpatialRealAvatar(
           },
           drivingServiceMode,
           sdkLogLevel,
-          sessionToken,
+          sdkRegion,
           userId,
         });
         if (cancelled) {
@@ -492,14 +490,14 @@ export function useSpatialRealAvatar(
   }, [
     appId,
     avatarId,
-    characterApiBaseUrl,
+    customEndpoint,
     containerElement,
     containerReady,
     drivingServiceMode,
     enabled,
     roomName,
     sdkLogLevel,
-    sessionToken,
+    sdkRegion,
     syncMicTrack,
     teardownInstance,
     token,
