@@ -37,6 +37,7 @@ import {
   SpatialRealAvatarProvider,
   useSpatialRealAvatarContext,
 } from "@/components/spatialreal-avatar";
+import { IntakeCard } from "@/components/IntakeCard";
 
 type TokenConnection = {
   identity: string;
@@ -158,6 +159,9 @@ function ActiveSession({
   const { chatMessages, send: sendChat } = useChat();
   const participants = useParticipants();
 
+  const setSummary = useIntakeStore((state) => state.setSummary);
+  const clearSummary = useIntakeStore((state) => state.clearSummary);
+
   const [chatValue, setChatValue] = useState("");
   const [micPending, setMicPending] = useState(false);
   const finishTriggeredRef = useRef(false);
@@ -182,6 +186,10 @@ function ActiveSession({
         return;
       }
 
+      if (parsed.all_data && Object.keys(parsed.all_data).length > 0) {
+        setSummary(parsed.all_data);
+      }
+
       if (parsed.type === "intake_finished") {
         setIsRegistrationComplete(true);
         if (!finishTriggeredRef.current) {
@@ -197,7 +205,13 @@ function ActiveSession({
     return () => {
       room.off(RoomEvent.DataReceived, handleData);
     };
-  }, [avatar, onCompleted, room, setIsRegistrationComplete]);
+  }, [avatar, onCompleted, room, setIsRegistrationComplete, setSummary]);
+
+  useEffect(() => {
+    return () => {
+      clearSummary();
+    };
+  }, [clearSummary]);
 
   const transcript = useMemo<TranscriptMessage[]>(() => {
     const transcriptionMessages = transcriptSegments.map((segment, index) => ({
@@ -353,6 +367,8 @@ function ActiveSession({
             </div>
           </div>
         </header>
+
+        <IntakeCard />
 
         <TranscriptPanel messages={transcript} />
 
