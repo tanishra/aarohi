@@ -40,7 +40,10 @@ async def entrypoint(ctx: JobContext) -> None:
     settings = load_settings()
     
     # Initialize the local database
-    init_db()
+    try:
+        init_db()
+    except Exception as exc:
+        logger.warning("Database init failed: %s", exc)
 
     # 1. Connect to the room
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
