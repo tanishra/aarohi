@@ -81,6 +81,7 @@ async def entrypoint(ctx: JobContext) -> None:
             pace=settings.sarvam.pace,
             temperature=settings.sarvam.temperature,
             base_url=settings.sarvam.base_url,
+            stream_base_url=settings.sarvam.stream_base_url,
         ),
         vad=silero.VAD.load(),
         turn_handling=TurnHandlingOptions(

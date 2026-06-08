@@ -51,6 +51,7 @@ class SarvamConfig:
     pace: float
     temperature: float
     base_url: str
+    stream_base_url: str
 
 
 @dataclass(frozen=True)
@@ -104,6 +105,10 @@ def load_settings() -> Settings:
             temperature=float(optional("SARVAM_TTS_TEMPERATURE", "0.6") or "0.6"),
             base_url=optional("SARVAM_TTS_URL", "https://api.sarvam.ai/text-to-speech")
             or "https://api.sarvam.ai/text-to-speech",
+            stream_base_url=optional(
+                "SARVAM_TTS_STREAM_URL", "https://api.sarvam.ai/text-to-speech/stream"
+            )
+            or "https://api.sarvam.ai/text-to-speech/stream",
         ),
         spatius=SpatiusConfig(
             enabled=(optional("SPATIUS_ENABLED", "true") or "true").lower() != "false",
