@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from typing import Optional
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from .encryption import encrypt_data, decrypt_data
@@ -43,21 +44,23 @@ class PatientIntake(SQLModel, table=True):
 
 def init_db():
     """Initializes tables in both local and cloud databases."""
+    start = time.monotonic()
     try:
         SQLModel.metadata.create_all(engine_local)
-        logger.info(f"Local fallback database initialized at {LOCAL_DB_PATH}")
+        logger.info("Local fallback database initialized at %s (%.3fs)", LOCAL_DB_PATH, time.monotonic() - start)
     except Exception as e:
-        logger.error(f"Error initializing Supabase database: {e}")
+        logger.error("Error initializing local database: %s", e)
 
     if engine_cloud:
         try:
             SQLModel.metadata.create_all(engine_cloud)
             logger.info("Cloud database initialized successfully.")
         except Exception as e:
-            logger.warning(f"Could not initialize cloud database tables (might be unreachable): {e}")
+            logger.warning("Could not initialize cloud database tables (might be unreachable): %s", e)
 
 def save_intake(data: dict, clinic_id: str = "admin") -> bool:
     """Saves intake data for a specific clinic. Tries cloud first, falls back to local."""
+    start = time.monotonic()
     try:
         # Encrypt PII
         encrypted_data = data.copy()
@@ -76,26 +79,30 @@ def save_intake(data: dict, clinic_id: str = "admin") -> bool:
                 with Session(engine_cloud) as session:
                     session.add(intake)
                     session.commit()
-                logger.info(f"Intake report saved successfully to CLOUD database for clinic {clinic_id}.")
+                elapsed = time.monotonic() - start
+                logger.info("Intake saved to CLOUD database for clinic %s (%.3fs)", clinic_id, elapsed)
                 return True
             except Exception as e:
-                logger.warning(f"Cloud DB failed. Falling back to local. Error: {e}")
+                logger.warning("Cloud DB failed, falling back to local: %s", e)
 
         # Fallback to Local DB
         intake_fallback = PatientIntake(**encrypted_data, sync_status="pending")
         with Session(engine_local) as session:
             session.add(intake_fallback)
             session.commit()
-        logger.info(f"Intake report saved to LOCAL fallback database with status 'pending' for clinic {clinic_id}.")
+        elapsed = time.monotonic() - start
+        logger.info("Intake saved to LOCAL fallback (pending) for clinic %s (%.3fs)", clinic_id, elapsed)
         return True
 
     except Exception as e:
-        logger.error(f"FATAL: Error saving intake to BOTH cloud and local databases: {e}")
+        elapsed = time.monotonic() - start
+        logger.error("FATAL: intake save failed for clinic %s after %.3fs: %s", clinic_id, elapsed, e)
         return False
 
 def get_intake(intake_id: int, from_local: bool = False) -> Optional[dict]:
     """Helper method to retrieve and decrypt an intake record for verification."""
     engine_to_use = engine_local if from_local else (engine_cloud or engine_local)
+    start = time.monotonic()
 
     try:
         with Session(engine_to_use) as session:
@@ -106,9 +113,12 @@ def get_intake(intake_id: int, from_local: bool = False) -> Optional[dict]:
             data = intake.model_dump()
             data["name"] = decrypt_data(data["name"])
             data["contact"] = decrypt_data(data["contact"])
+            elapsed = time.monotonic() - start
+            logger.info("Intake %d retrieved in %.3fs", intake_id, elapsed)
             return data
     except Exception as e:
-        logger.error(f"Error retrieving intake: {e}")
+        elapsed = time.monotonic() - start
+        logger.error("Error retrieving intake %d after %.3fs: %s", intake_id, elapsed, e)
         return None
 
 def sync_local_to_cloud():
@@ -117,6 +127,7 @@ def sync_local_to_cloud():
         logger.debug("No CLOUD_DB_URL configured. Skipping sync.")
         return
 
+    start = time.monotonic()
     try:
         with Session(engine_local) as session_local:
             # Find all pending records
@@ -126,7 +137,7 @@ def sync_local_to_cloud():
             if not pending_records:
                 return
 
-            logger.info(f"Found {len(pending_records)} pending records in local DB. Attempting sync to cloud...")
+            logger.info("Found %d pending records. Starting sync to cloud...", len(pending_records))
 
             with Session(engine_cloud) as session_cloud:
                 synced_count = 0
@@ -146,10 +157,12 @@ def sync_local_to_cloud():
                         synced_count += 1
                     except Exception as record_err:
                         session_cloud.rollback()
-                        logger.error(f"Failed to sync record ID {record.id}: {record_err}")
+                        logger.error("Failed to sync record ID %d: %s", record.id, record_err)
 
                 if synced_count > 0:
-                    logger.info(f"Successfully synced {synced_count} records to cloud.")
+                    elapsed = time.monotonic() - start
+                    logger.info("Synced %d records to cloud in %.3fs", synced_count, elapsed)
 
     except Exception as e:
-        logger.error(f"Sync process failed (Cloud DB might be down): {e}")
+        elapsed = time.monotonic() - start
+        logger.error("Sync process failed after %.3fs: %s", elapsed, e)

@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from livekit.agents import Agent, llm, JobContext
 from prompts.persona import get_aarohi_instructions
 from .database import save_intake
+from .metrics import tool_calls
 
 logger = logging.getLogger(__name__)
 
@@ -21,12 +23,21 @@ class AarohiTools:
         Retrieves the current date and time knowledge.
         :param timezone: The timezone to get the time for (e.g., 'UTC', 'Asia/Kolkata', 'America/New_York').
         """
+        start = time.monotonic()
         try:
             now = datetime.now(ZoneInfo(timezone))
-            return now.strftime("%A, %B %d, %Y, %I:%M %p %Z")
+            result = now.strftime("%A, %B %d, %Y, %I:%M %p %Z")
+            duration = time.monotonic() - start
+            tool_calls.labels(tool_name="get_date_time", status="success").inc()
+            logger.info("Tool get_date_time(%s) completed in %.3fs", timezone, duration)
+            return result
         except Exception:
             now = datetime.now(ZoneInfo("UTC"))
-            return now.strftime("%A, %B %d, %Y, %I:%M %p %Z")
+            result = now.strftime("%A, %B %d, %Y, %I:%M %p %Z")
+            duration = time.monotonic() - start
+            tool_calls.labels(tool_name="get_date_time", status="error").inc()
+            logger.warning("Tool get_date_time(%s) fell back to UTC after %.3fs", timezone, duration)
+            return result
 
     @llm.function_tool(description="Updates the visual progress bar on the user's screen. Call this tool silently whenever you have successfully gathered new information from the patient.")
     async def update_progress_ui(self, completed_fields: list[str]) -> str:
@@ -34,6 +45,7 @@ class AarohiTools:
         Sends a progress update to the frontend UI.
         :param completed_fields: A list of strings representing the fields you have gathered so far. Valid options are EXACTLY: ["Name", "Age/Gender", "Contact", "Symptoms", "Duration/Severity", "History"]
         """
+        start = time.monotonic()
         payload = json.dumps({
             "type": "progress_update",
             "completed": completed_fields
@@ -44,10 +56,14 @@ class AarohiTools:
                 payload=payload,
                 topic="extraction_update"
             )
-            logger.info(f"Progress UI updated: {completed_fields}")
+            duration = time.monotonic() - start
+            tool_calls.labels(tool_name="update_progress_ui", status="success").inc()
+            logger.info("Tool update_progress_ui(%s) completed in %.3fs", completed_fields, duration)
             return "SUCCESS: Progress UI updated."
         except Exception as e:
-            logger.error(f"Progress signal failed: {e}")
+            duration = time.monotonic() - start
+            tool_calls.labels(tool_name="update_progress_ui", status="error").inc()
+            logger.error("Tool update_progress_ui failed after %.3fs: %s", duration, e)
             return "ERROR: Failed to update UI."
 
     @llm.function_tool(description="Submit the final patient intake report to the clinic database. Call this immediately after providing the verbal summary.")
@@ -75,7 +91,8 @@ class AarohiTools:
         :param medications: Any current medications.
         :param known_conditions: Any existing medical conditions.
         """
-        logger.info(f"Finalizing intake for: {patient_name} at clinic {self.clinic_id}")
+        start = time.monotonic()
+        logger.info("Tool submit_intake_report called for patient=%r at clinic=%s", patient_name, self.clinic_id)
         
         data = {
             "patient_name": patient_name,
@@ -115,10 +132,16 @@ class AarohiTools:
                 )
                 logger.info("Intake completion signal sent to UI.")
             except Exception as e:
-                logger.error(f"Signal failed: {e}")
+                logger.error("Intake signal publish failed: %s", e)
 
+            duration = time.monotonic() - start
+            tool_calls.labels(tool_name="submit_intake_report", status="success").inc()
+            logger.info("Tool submit_intake_report succeeded in %.3fs", duration)
             return "SUCCESS: Intake saved. You can now deliver the final goodbye."
         else:
+            duration = time.monotonic() - start
+            tool_calls.labels(tool_name="submit_intake_report", status="error").inc()
+            logger.error("Tool submit_intake_report failed after %.3fs", duration)
             return "ERROR: Database save failed. Try one more time."
 
 class IntakeAgent(Agent):

@@ -7,9 +7,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.responses import Response
 from pydantic import BaseModel, field_validator
 from livekit import api
-from sqlmodel import Session
+from sqlmodel import Session, text
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -175,6 +176,26 @@ async def token(
         "identity": identity,
         "clinic_id": clinic_id,
     }
+
+@app.get("/health")
+async def health():
+    """Health check endpoint for Docker / load balancer probes."""
+    db_ok = True
+    try:
+        with Session(engine_local) as session:
+            session.exec(text("SELECT 1"))
+    except Exception:
+        db_ok = False
+    return {"status": "ok" if db_ok else "degraded", "db": "connected" if db_ok else "unreachable"}
+
+
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint."""
+    from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 
 if __name__ == "__main__":
     import uvicorn

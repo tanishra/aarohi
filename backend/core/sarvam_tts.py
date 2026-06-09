@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import logging
 import struct
+import time
 from typing import Any
 from uuid import uuid4
 
@@ -14,6 +16,10 @@ from livekit.agents import (
     utils,
 )
 from livekit.agents.tts import AudioEmitter
+
+from .metrics import tts_latency
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_wav_header(data: bytes) -> tuple[int, int, int, int]:
@@ -130,6 +136,11 @@ class _SarvamChunkedStream(tts.ChunkedStream):
             "temperature": self._tts._temperature,
         }
 
+        text_preview = self.input_text[:80]
+        logger.info("Starting TTS stream for text=%r", text_preview)
+
+        request_start = time.monotonic()
+
         try:
             async with session.post(
                 self._tts._stream_base_url,
@@ -157,6 +168,14 @@ class _SarvamChunkedStream(tts.ChunkedStream):
                     if not chunk:
                         continue
                     if not header_parsed:
+                        ttfa = time.monotonic() - request_start
+                        tts_latency.observe(ttfa)
+                        logger.info(
+                            "TTS first audio chunk received in %.3fs for text=%r",
+                            ttfa,
+                            text_preview,
+                        )
+
                         sample_rate, num_channels, _, data_offset = _parse_wav_header(chunk)
                         output_emitter.initialize(
                             request_id=request_id,
@@ -170,7 +189,10 @@ class _SarvamChunkedStream(tts.ChunkedStream):
                         header_parsed = True
                     else:
                         output_emitter.push(chunk)
+
+                logger.info("TTS stream finished for text=%r", text_preview)
         except aiohttp.ClientError as exc:
+            logger.error("TTS stream connection error for text=%r: %s", text_preview, exc)
             raise APIConnectionError("sarvam tts connection failed") from exc
 
     def _language_for_text(self, text: str) -> str:

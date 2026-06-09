@@ -2,12 +2,19 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from dotenv import load_dotenv
+
+from config.logging import configure_logging, session_id_var
+
+configure_logging()
+
 from config.settings import load_settings
 from core.agents import IntakeAgent
 from core.context import SessionContext
 from core.database import init_db
 from core.sarvam_tts import SarvamTTS
+from core.metrics import sessions_active, sessions_total, turn_count
 
 from livekit import agents
 from livekit.agents import (
@@ -32,13 +39,25 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+# Start Prometheus metrics HTTP server (separate thread)
+_prometheus_port = int(os.getenv("METRICS_PORT", "9090"))
+try:
+    from prometheus_client import start_http_server as _start_metrics
+
+    _start_metrics(_prometheus_port)
+    logger.info("Metrics HTTP server started on port %d", _prometheus_port)
+except Exception as exc:
+    logger.warning("Prometheus metrics server not available: %s", exc)
+
 # High-level Agent Server Pattern
 server = AgentServer()
+
 
 @server.rtc_session(agent_name="voice-assistant")
 async def entrypoint(ctx: JobContext) -> None:
     settings = load_settings()
-    
+    session_start_time = time.monotonic()
+
     # Initialize the local database
     try:
         init_db()
@@ -48,19 +67,33 @@ async def entrypoint(ctx: JobContext) -> None:
     # 1. Connect to the room
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
     participant = await ctx.wait_for_participant()
-    logger.info("Participant joined: %s", participant.identity)
 
-    # 2. Setup Session Context and Agent
+    # 2. Setup Session Context
     session_ctx = SessionContext(
         language=settings.agent.language,
     )
-    
-    # Create the agent instance first so we can access its tools
+    session_id_var.set(session_ctx.session_id)
+
+    sessions_active.inc()
+    sessions_total.labels(outcome="started").inc()
+
+    logger.info(
+        "Session started  id=%s room=%s participant=%s",
+        session_ctx.session_id,
+        ctx.room.name,
+        participant.identity,
+    )
+
+    # 3. Create the agent instance
     agent = IntakeAgent(ctx)
     registered_tools = agent.get_tool_list()
-    logger.info(f"Registering {len(registered_tools)} tools: {[t.info.name for t in registered_tools]}")
+    logger.info(
+        "Registering %d tools: %s",
+        len(registered_tools),
+        [t.info.name for t in registered_tools],
+    )
 
-    # 3. Initialize Agent Session with Advanced Options
+    # 4. Initialize Agent Session with Advanced Options
     session = AgentSession(
         stt=deepgram.STT(
             model=settings.deepgram.stt_model,
@@ -70,7 +103,7 @@ async def entrypoint(ctx: JobContext) -> None:
         llm=openai.LLM(
             model=settings.openai.model,
             api_key=settings.openai.api_key,
-            parallel_tool_calls=False, # Force sequential for reliable nurse workflow
+            parallel_tool_calls=False,
         ),
         tts=SarvamTTS(
             api_key=settings.sarvam.api_key,
@@ -96,20 +129,20 @@ async def entrypoint(ctx: JobContext) -> None:
                 min_words=1,
             ),
         ),
-        # Removed redundant tools registration here as they are inside the agent
-        max_tool_steps=5, # Allow more steps if summary + submission are handled
+        max_tool_steps=5,
         userdata=session_ctx,
     )
 
-    # 4. Attach SpatialReal Avatar
+    # 5. Attach SpatialReal Avatar
     if settings.spatius.enabled:
         try:
             avatar = AvatarSession()
             await avatar.start(session, room=ctx.room)
         except Exception as exc:
+            session_ctx.log_error(f"Avatar startup failed: {exc}")
             logger.warning("SpatialReal avatar startup failed: %s", exc)
 
-    # 5. Start the Session with Persona and Audio Enhancement
+    # 6. Start the Session with Persona and Audio Enhancement
     await session.start(
         agent=agent,
         room=ctx.room,
@@ -122,11 +155,15 @@ async def entrypoint(ctx: JobContext) -> None:
         ),
     )
 
-    # 6. Dynamic Initial Greet using LLM
+    # 7. Dynamic Initial Greet using LLM
     from prompts.persona import get_opening_message
+
     await session.generate_reply(
         instructions=f"Greet the user warmly. Context for the greeting: {get_opening_message()}"
     )
+
+    # Session lifecycle continues in the LiveKit agent server;
+    # metrics and session_id correlation are active for the session's duration.
 
 
 if __name__ == "__main__":

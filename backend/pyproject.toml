@@ -28,5 +28,7 @@ dependencies = [
       "bcrypt==4.0.1",
       "python-multipart>=0.0.28",
       "aiohttp>=3.9.0",
-      "slowapi>=0.1.9"
+      "slowapi>=0.1.9",
+      "python-json-logger>=2.0.0",
+      "prometheus-client>=0.21.0"
 ]

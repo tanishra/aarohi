@@ -33,6 +33,7 @@ class SessionContext:
     confirmed: bool = False
     session_ended_by: str = ""
     correction_target: str | None = None
+    error_log: list[str] = field(default_factory=list)
     started_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     ended_at: datetime | None = None
 
@@ -42,6 +43,9 @@ class SessionContext:
     def mark_emergency(self) -> None:
         self.emergency_flag = True
         self.current_state = "emergency"
+
+    def log_error(self, message: str) -> None:
+        self.error_log.append(message)
 
     def mark_ended(self, ended_by: str) -> None:
         self.session_ended_by = ended_by
