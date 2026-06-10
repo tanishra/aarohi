@@ -3,8 +3,16 @@ from __future__ import annotations
 import logging
 import os
 import signal
+import sys
 import time
+from pathlib import Path
 from dotenv import load_dotenv
+
+# Ensure backend/ is on sys.path so "config", "core" etc. resolve
+# regardless of whether you run from project root or backend/
+_backend_dir = str(Path(__file__).parent)
+if _backend_dir not in sys.path:
+    sys.path.insert(0, _backend_dir)
 
 from config.logging import configure_logging, session_id_var
 
@@ -32,7 +40,7 @@ from livekit.agents.voice.turn import (
     InterruptionOptions,
     TurnHandlingOptions,
 )
-from livekit.plugins import deepgram, silero, ai_coustics
+from livekit.plugins import deepgram, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 from livekit.plugins.spatius import AvatarSession
 
@@ -165,11 +173,7 @@ async def entrypoint(ctx: JobContext) -> None:
         agent=agent,
         room=ctx.room,
         room_options=room_io.RoomOptions(
-            audio_input=room_io.AudioInputOptions(
-                noise_cancellation=ai_coustics.audio_enhancement(
-                    model=ai_coustics.EnhancerModel.QUAIL_VF_L
-                ),
-            ),
+            audio_input=room_io.AudioInputOptions(),
         ),
     )
 

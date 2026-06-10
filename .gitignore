@@ -1,0 +1,22 @@
+.DS_Store
+.vscode/
+aarohi.pem
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.db
+
+# Node / frontend
+node_modules/
+.next/
+out/
+
+# OS
+*.pem
+*.swp
+*.swo
+*~
+explanation.md

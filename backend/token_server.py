@@ -1,9 +1,17 @@
 import logging
+import sys
 from datetime import timedelta
 from uuid import uuid4
 import os
 import asyncio
 from contextlib import asynccontextmanager
+from pathlib import Path
+
+# Ensure backend/ is on sys.path so "config", "core" etc. resolve
+# regardless of whether you run from project root or backend/
+_backend_dir = str(Path(__file__).parent)
+if _backend_dir not in sys.path:
+    sys.path.insert(0, _backend_dir)
 
 from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware

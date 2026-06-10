@@ -30,16 +30,25 @@ def configure_logging() -> None:
     level = (os.getenv("LOG_LEVEL") or "INFO").upper()
     pretty = os.getenv("PRETTY_LOGS", "").lower() in ("1", "true", "yes")
 
+    try:
+        import pythonjsonlogger  # noqa: F401
+        json_formatter: dict = {
+            "class": "pythonjsonlogger.jsonlogger.JsonFormatter",
+            "format": "%(asctime)s %(levelname)s %(name)s %(message)s %(session_id)s",
+            "datefmt": "%Y-%m-%dT%H:%M:%S%z",
+        }
+    except ImportError:
+        json_formatter = {
+            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s %(session_id)s",
+            "datefmt": "%Y-%m-%dT%H:%M:%S%z",
+        }
+
     formatters: dict = {
         "standard": {
             "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
             "datefmt": "%Y-%m-%dT%H:%M:%S%z",
         },
-        "json": {
-            "class": "pythonjsonlogger.jsonlogger.JsonFormatter",
-            "format": "%(asctime)s %(levelname)s %(name)s %(message)s %(session_id)s",
-            "datefmt": "%Y-%m-%dT%H:%M:%S%z",
-        },
+        "json": json_formatter,
     }
 
     effective_format = "standard" if pretty else "json"
