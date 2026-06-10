@@ -93,7 +93,26 @@ class AarohiTools:
         """
         start = time.monotonic()
         logger.info("Tool submit_intake_report called for patient at clinic=%s", self.clinic_id)
-        
+
+        # Input validation
+        if severity_score < 1 or severity_score > 10:
+            return "ERROR: Severity score must be between 1 and 10. Please ask the patient again."
+        if age < 0 or age > 150:
+            return "ERROR: Age must be between 0 and 150. Please verify with the patient."
+
+        _max_field_len = 1000
+        for _field_name, _field_val in (
+            ("Patient name", patient_name),
+            ("Chief complaint", chief_complaint),
+            ("Symptom duration", symptom_duration),
+            ("Gender", gender),
+            ("Contact number", contact_number),
+            ("Medications", medications),
+            ("Known conditions", known_conditions),
+        ):
+            if len(_field_val) > _max_field_len:
+                return f"ERROR: {_field_name} exceeds maximum length. Please provide a shorter value."
+
         data = {
             "patient_name": patient_name,
             "age": str(age) if age > 0 else "Unknown",

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import logging
+import os
+import random
 import struct
 import time
 from typing import Any
@@ -17,6 +20,7 @@ from livekit.agents import (
 )
 from livekit.agents.tts import AudioEmitter
 
+from .circuit_breaker import CircuitBreaker
 from .metrics import tts_latency
 
 logger = logging.getLogger(__name__)
@@ -86,6 +90,11 @@ class SarvamTTS(tts.TTS):
         self._base_url = base_url
         self._stream_base_url = stream_base_url
         self._session = http_session
+        self._circuit_breaker = CircuitBreaker(
+            name="sarvam-tts",
+            failure_threshold=int(os.getenv("SARVAM_CIRCUIT_BREAKER_THRESHOLD", "3")),
+            recovery_timeout=float(os.getenv("SARVAM_CIRCUIT_BREAKER_TIMEOUT", "300")),
+        )
 
     @property
     def model(self) -> str:
@@ -139,61 +148,108 @@ class _SarvamChunkedStream(tts.ChunkedStream):
         text_preview = self.input_text[:80]
         logger.info("Starting TTS stream for text=%r", text_preview)
 
-        request_start = time.monotonic()
+        cb = self._tts._circuit_breaker
 
-        try:
-            async with session.post(
-                self._tts._stream_base_url,
-                headers={
-                    "api-subscription-key": self._tts._api_key,
-                    "Content-Type": "application/json",
-                },
-                json=payload,
-                timeout=aiohttp.ClientTimeout(total=self._conn_options.timeout),
-            ) as response:
-                if response.status < 200 or response.status >= 300:
-                    body = await response.text()
-                    raise APIStatusError(
-                        "sarvam tts stream request failed",
-                        status_code=response.status,
-                        request_id=response.headers.get("x-request-id"),
-                        body=body,
-                        retryable=response.status in {429, 500, 502, 503, 504},
+        max_retries = int(os.getenv("SARVAM_MAX_RETRIES", "3"))
+        base_delay = float(os.getenv("SARVAM_RETRY_BASE_DELAY", "1.0"))
+
+        for attempt in range(max_retries):
+            if not cb.allow_request():
+                raise APIConnectionError("sarvam tts circuit breaker open")
+
+            request_start = time.monotonic()
+
+            try:
+                async with session.post(
+                    self._tts._stream_base_url,
+                    headers={
+                        "api-subscription-key": self._tts._api_key,
+                        "Content-Type": "application/json",
+                    },
+                    json=payload,
+                    timeout=aiohttp.ClientTimeout(total=self._conn_options.timeout),
+                ) as response:
+                    if response.status < 200 or response.status >= 300:
+                        body = await response.text()
+                        if (
+                            response.status in {429, 500, 502, 503, 504}
+                            and attempt < max_retries - 1
+                        ):
+                            delay = base_delay * (2**attempt) + random.uniform(0, 0.5)
+                            logger.warning(
+                                "TTS attempt %d/%d failed (HTTP %d), retrying in %.2fs...",
+                                attempt + 1,
+                                max_retries,
+                                response.status,
+                                delay,
+                            )
+                            await asyncio.sleep(delay)
+                            continue
+                        cb.record_failure()
+                        raise APIStatusError(
+                            "sarvam tts stream request failed",
+                            status_code=response.status,
+                            request_id=response.headers.get("x-request-id"),
+                            body=body,
+                            retryable=response.status in {429, 500, 502, 503, 504},
+                        )
+
+                    cb.record_success()
+                    request_id = str(uuid4())
+                    header_parsed = False
+
+                    async for chunk in response.content.iter_chunked(65536):
+                        if not chunk:
+                            continue
+                        if not header_parsed:
+                            ttfa = time.monotonic() - request_start
+                            tts_latency.observe(ttfa)
+                            logger.info(
+                                "TTS first audio chunk received in %.3fs for text=%r",
+                                ttfa,
+                                text_preview,
+                            )
+
+                            sample_rate, num_channels, _, data_offset = _parse_wav_header(
+                                chunk
+                            )
+                            output_emitter.initialize(
+                                request_id=request_id,
+                                sample_rate=sample_rate,
+                                num_channels=num_channels,
+                                mime_type="audio/L16",
+                            )
+                            pcm_data = chunk[data_offset:]
+                            if pcm_data:
+                                output_emitter.push(pcm_data)
+                            header_parsed = True
+                        else:
+                            output_emitter.push(chunk)
+
+                    logger.info("TTS stream finished for text=%r", text_preview)
+                    return
+
+            except aiohttp.ClientError as exc:
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2**attempt) + random.uniform(0, 0.5)
+                    logger.warning(
+                        "TTS attempt %d/%d connection error, retrying in %.2fs...",
+                        attempt + 1,
+                        max_retries,
+                        delay,
                     )
+                    await asyncio.sleep(delay)
+                    continue
+                cb.record_failure()
+                logger.error(
+                    "TTS stream connection error for text=%r after %d attempts: %s",
+                    text_preview,
+                    max_retries,
+                    exc,
+                )
+                raise APIConnectionError("sarvam tts connection failed") from exc
 
-                request_id = str(uuid4())
-                header_parsed = False
-
-                async for chunk in response.content.iter_chunked(65536):
-                    if not chunk:
-                        continue
-                    if not header_parsed:
-                        ttfa = time.monotonic() - request_start
-                        tts_latency.observe(ttfa)
-                        logger.info(
-                            "TTS first audio chunk received in %.3fs for text=%r",
-                            ttfa,
-                            text_preview,
-                        )
-
-                        sample_rate, num_channels, _, data_offset = _parse_wav_header(chunk)
-                        output_emitter.initialize(
-                            request_id=request_id,
-                            sample_rate=sample_rate,
-                            num_channels=num_channels,
-                            mime_type="audio/L16",
-                        )
-                        pcm_data = chunk[data_offset:]
-                        if pcm_data:
-                            output_emitter.push(pcm_data)
-                        header_parsed = True
-                    else:
-                        output_emitter.push(chunk)
-
-                logger.info("TTS stream finished for text=%r", text_preview)
-        except aiohttp.ClientError as exc:
-            logger.error("TTS stream connection error for text=%r: %s", text_preview, exc)
-            raise APIConnectionError("sarvam tts connection failed") from exc
+        cb.record_failure()
 
     def _language_for_text(self, text: str) -> str:
         configured_language = self._tts._target_language_code

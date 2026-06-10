@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import signal
 import time
 from dotenv import load_dotenv
 
@@ -50,12 +51,28 @@ try:
 except Exception as exc:
     logger.warning("Prometheus metrics server not available: %s", exc)
 
+# Graceful shutdown flag
+_shutting_down = False
+
+
+def _handle_sigterm(signum: int, frame) -> None:
+    global _shutting_down
+    _shutting_down = True
+    logger.warning("Received SIGTERM, shutting down gracefully...")
+
+
+signal.signal(signal.SIGTERM, _handle_sigterm)
+
 # High-level Agent Server Pattern
 server = AgentServer()
 
 
 @server.rtc_session(agent_name="voice-assistant")
 async def entrypoint(ctx: JobContext) -> None:
+    if _shutting_down:
+        logger.warning("Server shutting down, rejecting new session")
+        return
+
     settings = load_settings()
     session_start_time = time.monotonic()
 
