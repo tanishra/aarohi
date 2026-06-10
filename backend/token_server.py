@@ -83,7 +83,8 @@ class RegisterRequest(BaseModel):
         return v
 
 @app.post("/register")
-async def register(body: RegisterRequest):
+@limiter.limit("5/minute")
+async def register(request: Request, body: RegisterRequest):
     """Create a new clinic account."""
     with Session(engine_local) as session:
         existing = session.get(Clinic, body.username)
@@ -139,16 +140,18 @@ async def create_room_and_dispatch(room_name: str) -> None:
 
 
 @app.post("/token")
+@limiter.limit("20/minute")
 async def token(
-    request: TokenRequest,
+    request: Request,
+    body: TokenRequest,
     background_tasks: BackgroundTasks,
     clinic_id: str = Depends(get_current_clinic_id) # Protect this endpoint
 ):
-    room_name = request.room or settings.agent.default_room
+    room_name = body.room or settings.agent.default_room
 
     identity = (
-        request.identity.strip()
-        if request.identity and request.identity.strip()
+        body.identity.strip()
+        if body.identity and body.identity.strip()
         else f"browser-{uuid4().hex[:8]}"
     )
 

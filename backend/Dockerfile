@@ -24,5 +24,9 @@ COPY . .
 # Download models
 RUN python main.py download-files
 
+# Switch to non-root user
+RUN adduser --disabled-password --no-create-home appuser
+USER appuser
+
 # Default command will be overridden by docker-compose for the specific service (API vs Agent)
 CMD ["python", "main.py", "dev"]
