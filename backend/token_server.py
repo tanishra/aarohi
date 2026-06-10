@@ -48,6 +48,16 @@ app = FastAPI(lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+MAX_BODY_SIZE = 1_048_576  # 1 MB
+
+
+@app.middleware("http")
+async def limit_body_size(request: Request, call_next):
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > MAX_BODY_SIZE:
+        return Response(status_code=413, content="Request body too large")
+    return await call_next(request)
+
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 
 app.add_middleware(
@@ -207,4 +217,10 @@ async def metrics():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("token_server:app", host="0.0.0.0", port=8080, reload=True)
+    uvicorn.run(
+        "token_server:app",
+        host="0.0.0.0",
+        port=8080,
+        reload=True,
+        limit_max_request_body=MAX_BODY_SIZE,
+    )

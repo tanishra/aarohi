@@ -8,12 +8,44 @@ import time
 
 from livekit.agents import APIConnectionError, APIStatusError
 from livekit.plugins import openai
-from livekit.agents.llm import ChatContext, ToolContext
+from livekit.agents.llm import ChatContext, ChatChunk, ToolContext
 
 from .circuit_breaker import CircuitBreaker
+from .guardrails import validate_llm_output
 from .metrics import llm_latency
 
 logger = logging.getLogger(__name__)
+
+
+class _GuardedStream:
+    """Wraps an LLMStream to validate text output against guardrails."""
+
+    def __init__(self, inner: openai.LLMStream):
+        self._inner = inner
+        self._text_buffer: list[str] = []
+
+    def __aiter__(self):
+        return self._guard()
+
+    async def _guard(self):
+        async for chunk in self._inner:
+            if chunk.content:
+                self._text_buffer.append(chunk.content)
+                full_text = "".join(self._text_buffer)
+                is_safe, category, desc = validate_llm_output(full_text)
+                if not is_safe:
+                    logger.error(
+                        "Guardrail blocked LLM output [%s]: %s. Text so far: %s",
+                        category, desc, full_text[:200],
+                    )
+                    yield ChatChunk(
+                        content=" I apologise, I am unable to respond to that. Let me refocus on your health intake."
+                    )
+                    return
+            yield chunk
+
+    async def aclose(self) -> None:
+        await self._inner.aclose()
 
 
 class InstrumentedOpenAILLM(openai.LLM):
@@ -52,7 +84,7 @@ class InstrumentedOpenAILLM(openai.LLM):
                 )
                 llm_latency.observe(time.monotonic() - start)
                 self._breaker.record_success()
-                return stream
+                return _GuardedStream(stream)
             except (APIStatusError, APIConnectionError) as exc:
                 is_retryable = isinstance(exc, APIConnectionError) or (
                     isinstance(exc, APIStatusError)
@@ -71,3 +103,6 @@ class InstrumentedOpenAILLM(openai.LLM):
                     continue
                 self._breaker.record_failure()
                 raise
+
+        self._breaker.record_failure()
+        raise APIConnectionError("llm chat failed after all retries")
