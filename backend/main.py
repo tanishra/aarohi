@@ -13,6 +13,7 @@ from config.settings import load_settings
 from core.agents import IntakeAgent
 from core.context import SessionContext
 from core.database import init_db
+from core.instrumented_llm import InstrumentedOpenAILLM
 from core.sarvam_tts import SarvamTTS
 from core.metrics import sessions_active, sessions_total, turn_count
 
@@ -30,7 +31,7 @@ from livekit.agents.voice.turn import (
     InterruptionOptions,
     TurnHandlingOptions,
 )
-from livekit.plugins import deepgram, openai, silero, ai_coustics, google
+from livekit.plugins import deepgram, silero, ai_coustics
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 from livekit.plugins.spatius import AvatarSession
 
@@ -100,7 +101,7 @@ async def entrypoint(ctx: JobContext) -> None:
             language=settings.deepgram.stt_language,
             api_key=settings.deepgram.api_key,
         ),
-        llm=openai.LLM(
+        llm=InstrumentedOpenAILLM(
             model=settings.openai.model,
             api_key=settings.openai.api_key,
             parallel_tool_calls=False,

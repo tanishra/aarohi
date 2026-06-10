@@ -92,7 +92,7 @@ class AarohiTools:
         :param known_conditions: Any existing medical conditions.
         """
         start = time.monotonic()
-        logger.info("Tool submit_intake_report called for patient=%r at clinic=%s", patient_name, self.clinic_id)
+        logger.info("Tool submit_intake_report called for patient at clinic=%s", self.clinic_id)
         
         data = {
             "patient_name": patient_name,
