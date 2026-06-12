@@ -154,7 +154,7 @@ class _SarvamChunkedStream(tts.ChunkedStream):
         base_delay = float(os.getenv("SARVAM_RETRY_BASE_DELAY", "1.0"))
 
         for attempt in range(max_retries):
-            if not cb.allow_request():
+            if not await cb.allow_request():
                 raise APIConnectionError("sarvam tts circuit breaker open")
 
             request_start = time.monotonic()
@@ -185,7 +185,7 @@ class _SarvamChunkedStream(tts.ChunkedStream):
                             )
                             await asyncio.sleep(delay)
                             continue
-                        cb.record_failure()
+                        await cb.record_failure()
                         raise APIStatusError(
                             "sarvam tts stream request failed",
                             status_code=response.status,
@@ -194,7 +194,7 @@ class _SarvamChunkedStream(tts.ChunkedStream):
                             retryable=response.status in {429, 500, 502, 503, 504},
                         )
 
-                    cb.record_success()
+                    await cb.record_success()
                     request_id = str(uuid4())
                     header_parsed = False
 
@@ -210,9 +210,22 @@ class _SarvamChunkedStream(tts.ChunkedStream):
                                 text_preview,
                             )
 
-                            sample_rate, num_channels, _, data_offset = _parse_wav_header(
-                                chunk
-                            )
+                            try:
+                                sample_rate, num_channels, _, data_offset = _parse_wav_header(
+                                    chunk
+                                )
+                            except ValueError:
+                                logger.warning(
+                                    "Sarvam returned non-WAV response, chunk starts: %r",
+                                    chunk[:50],
+                                )
+                                raise APIStatusError(
+                                    message="Invalid WAV response from TTS API",
+                                    status_code=200,
+                                    request_id=None,
+                                    body=str(chunk[:100]),
+                                    retryable=False,
+                                )
                             output_emitter.initialize(
                                 request_id=request_id,
                                 sample_rate=sample_rate,
@@ -240,7 +253,7 @@ class _SarvamChunkedStream(tts.ChunkedStream):
                     )
                     await asyncio.sleep(delay)
                     continue
-                cb.record_failure()
+                await cb.record_failure()
                 logger.error(
                     "TTS stream connection error for text=%r after %d attempts: %s",
                     text_preview,
@@ -249,7 +262,7 @@ class _SarvamChunkedStream(tts.ChunkedStream):
                 )
                 raise APIConnectionError("sarvam tts connection failed") from exc
 
-        cb.record_failure()
+        await cb.record_failure()
 
     def _language_for_text(self, text: str) -> str:
         configured_language = self._tts._target_language_code
