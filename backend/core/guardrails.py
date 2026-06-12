@@ -23,7 +23,7 @@ HARMFUL_PATTERNS: list[re.Pattern[str]] = [
 # Patterns indicating system prompt override attempts
 OVERRIDE_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"ignore\s+(?:all\s+)?(?:previous|above|prior|your)\s+instructions", re.IGNORECASE),
-    re.compile(r"you\s+are\s+(?:now|actually|not|really)\s+(?:an?\s+)?(?:AI|assistant|nurse|doctor|chatbot)", re.IGNORECASE),
+    re.compile(r"you\s+are\s+(?:now|actually|really)\s+(?:an?\s+)?(?:AI|assistant|nurse|doctor|chatbot)", re.IGNORECASE),
     re.compile(r"system\s+prompt|your\s+programming|your\s+underlying|reveal\s+your", re.IGNORECASE),
 ]
 

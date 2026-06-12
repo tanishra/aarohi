@@ -82,9 +82,10 @@ def test_ignore_prior_instructions_blocked():
     assert is_safe is False
 
 
-def test_you_are_not_ai_blocked():
+def test_you_are_not_ai_allowed():
+    # Medical disclaimer — should NOT be blocked
     is_safe, _, _ = validate_llm_output("You are not an AI")
-    assert is_safe is False
+    assert is_safe is True
 
 
 def test_system_prompt_reveal_blocked():
