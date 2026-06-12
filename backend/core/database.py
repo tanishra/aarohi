@@ -129,7 +129,8 @@ def sync_local_to_cloud():
 
     start = time.monotonic()
     try:
-        with Session(engine_local) as session_local:
+        # Use expire_on_commit=False so record objects stay usable after commit
+        with Session(engine_local, expire_on_commit=False) as session_local:
             # Find all pending records
             statement = select(PatientIntake).where(PatientIntake.sync_status == "pending")
             pending_records = session_local.exec(statement).all()
@@ -142,21 +143,34 @@ def sync_local_to_cloud():
             with Session(engine_cloud) as session_cloud:
                 synced_count = 0
                 for record in pending_records:
+                    local_committed = False
                     try:
-                        # Create a new object for the cloud (without the local ID to avoid conflicts)
-                        cloud_record_data = record.model_dump(exclude={"id"})
-                        cloud_record_data["sync_status"] = "synced"
-                        cloud_intake = PatientIntake(**cloud_record_data)
+                        # Mark local as synced FIRST — prevents duplication on crash
+                        record.sync_status = "synced"
+                        session_local.commit()
+                        local_committed = True
 
+                        # Now write to cloud
+                        cloud_record_data = record.model_dump(exclude={"id"})
+                        cloud_intake = PatientIntake(**cloud_record_data)
                         session_cloud.add(cloud_intake)
                         session_cloud.commit()
 
-                        # If cloud save is successful, delete the local fallback record
+                        # Delete local record (best-effort cleanup, not correctness-critical)
                         session_local.delete(record)
                         session_local.commit()
                         synced_count += 1
                     except Exception as record_err:
                         session_cloud.rollback()
+                        if local_committed:
+                            # Revert local status to pending so it can be retried
+                            try:
+                                record.sync_status = "pending"
+                                session_local.commit()
+                            except Exception:
+                                session_local.rollback()
+                        else:
+                            session_local.rollback()
                         logger.error("Failed to sync record ID %d: %s", record.id, record_err)
 
                 if synced_count > 0:
