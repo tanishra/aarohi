@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import time
@@ -35,29 +36,33 @@ class CircuitBreaker:
         self.failure_count = 0
         self._last_failure_time = 0.0
         self._state = CircuitState.CLOSED
+        self._lock = asyncio.Lock()
 
     @property
     def state(self) -> CircuitState:
-        if self._state == CircuitState.OPEN:
-            if time.monotonic() - self._last_failure_time >= self.recovery_timeout:
-                self._state = CircuitState.HALF_OPEN
         return self._state
 
-    def allow_request(self) -> bool:
-        return self.state != CircuitState.OPEN
+    async def allow_request(self) -> bool:
+        async with self._lock:
+            if self._state == CircuitState.OPEN:
+                if time.monotonic() - self._last_failure_time >= self.recovery_timeout:
+                    self._state = CircuitState.HALF_OPEN
+            return self._state != CircuitState.OPEN
 
-    def record_success(self) -> None:
-        self.failure_count = 0
-        self._state = CircuitState.CLOSED
+    async def record_success(self) -> None:
+        async with self._lock:
+            self.failure_count = 0
+            self._state = CircuitState.CLOSED
 
-    def record_failure(self) -> None:
-        self.failure_count += 1
-        self._last_failure_time = time.monotonic()
-        if self.failure_count >= self.failure_threshold:
-            logger.warning(
-                "Circuit breaker '%s' OPEN after %d failures (timeout=%.0fs)",
-                self.name,
-                self.failure_count,
-                self.recovery_timeout,
-            )
-            self._state = CircuitState.OPEN
+    async def record_failure(self) -> None:
+        async with self._lock:
+            self.failure_count += 1
+            self._last_failure_time = time.monotonic()
+            if self.failure_count >= self.failure_threshold:
+                logger.warning(
+                    "Circuit breaker '%s' OPEN after %d failures (timeout=%.0fs)",
+                    self.name,
+                    self.failure_count,
+                    self.recovery_timeout,
+                )
+                self._state = CircuitState.OPEN

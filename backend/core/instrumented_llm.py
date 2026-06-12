@@ -66,7 +66,7 @@ class InstrumentedOpenAILLM(openai.LLM):
         n: int | None = 1,
         parallel_tool_calls: bool | None = None,
     ) -> openai.LLMStream:
-        if not self._breaker.allow_request():
+        if not await self._breaker.allow_request():
             raise APIConnectionError("llm circuit breaker open")
 
         max_retries = int(os.getenv("LLM_MAX_RETRIES", "2"))
@@ -83,7 +83,7 @@ class InstrumentedOpenAILLM(openai.LLM):
                     parallel_tool_calls=parallel_tool_calls,
                 )
                 llm_latency.observe(time.monotonic() - start)
-                self._breaker.record_success()
+                await self._breaker.record_success()
                 return _GuardedStream(stream)
             except (APIStatusError, APIConnectionError) as exc:
                 is_retryable = isinstance(exc, APIConnectionError) or (
@@ -101,8 +101,8 @@ class InstrumentedOpenAILLM(openai.LLM):
                     )
                     await asyncio.sleep(delay)
                     continue
-                self._breaker.record_failure()
+                await self._breaker.record_failure()
                 raise
 
-        self._breaker.record_failure()
+        await self._breaker.record_failure()
         raise APIConnectionError("llm chat failed after all retries")
