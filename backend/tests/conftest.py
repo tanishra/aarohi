@@ -1,6 +1,7 @@
 import os
 
 # Must be set before any module imports that trigger load_settings()
+os.environ["ENCRYPTION_SECRET_KEY"] = "test-encryption-key-for-pytest"
 os.environ["JWT_SECRET_KEY"] = "test-secret-key-for-testing-only"
 os.environ["LIVEKIT_URL"] = "wss://test.livekit.cloud"
 os.environ["LIVEKIT_API_KEY"] = "test-api-key"

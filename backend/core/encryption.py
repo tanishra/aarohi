@@ -4,9 +4,8 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-# Get a secret key from the environment, or use a default one for dev
-# In production, this MUST be set in the environment.
-SECRET_KEY = os.getenv("ENCRYPTION_SECRET_KEY", "aarohi-dev-secret-key")
+# Must be set in the environment. No fallback — a dev key would silently weaken all encryption.
+SECRET_KEY = os.environ["ENCRYPTION_SECRET_KEY"]
 
 def _get_fernet() -> Fernet:
     """Generates a consistent Fernet instance based on the secret key."""
