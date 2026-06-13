@@ -147,8 +147,8 @@ async def create_room_and_dispatch(room_name: str) -> None:
     try:
         try:
             await lkapi.room.create_room(api.CreateRoomRequest(name=room_name))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Room creation failed: %s", e)
 
         await lkapi.agent_dispatch.create_dispatch(
             api.CreateAgentDispatchRequest(room=room_name, agent_name=settings.agent.name)
