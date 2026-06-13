@@ -110,82 +110,87 @@ async def entrypoint(ctx: JobContext) -> None:
         participant.identity,
     )
 
-    # 3. Create the agent instance
-    agent = IntakeAgent(ctx)
-    registered_tools = agent.get_tool_list()
-    logger.info(
-        "Registering %d tools: %s",
-        len(registered_tools),
-        [t.info.name for t in registered_tools],
-    )
+    try:
+        # 3. Create the agent instance
+        agent = IntakeAgent(ctx)
+        registered_tools = agent.get_tool_list()
+        logger.info(
+            "Registering %d tools: %s",
+            len(registered_tools),
+            [t.info.name for t in registered_tools],
+        )
 
-    # 4. Initialize Agent Session with Advanced Options
-    session = AgentSession(
-        stt=deepgram.STT(
-            model=settings.deepgram.stt_model,
-            language=settings.deepgram.stt_language,
-            api_key=settings.deepgram.api_key,
-        ),
-        llm=InstrumentedOpenAILLM(
-            model=settings.openai.model,
-            api_key=settings.openai.api_key,
-            parallel_tool_calls=False,
-        ),
-        tts=SarvamTTS(
-            api_key=settings.sarvam.api_key,
-            model=settings.sarvam.model,
-            speaker=settings.sarvam.speaker,
-            target_language_code=settings.sarvam.target_language_code,
-            sample_rate=settings.sarvam.sample_rate,
-            pace=settings.sarvam.pace,
-            temperature=settings.sarvam.temperature,
-            base_url=settings.sarvam.base_url,
-            stream_base_url=settings.sarvam.stream_base_url,
-        ),
-        vad=silero.VAD.load(),
-        turn_handling=TurnHandlingOptions(
-            turn_detection=MultilingualModel(),
-            endpointing=EndpointingOptions(
-                mode="fixed",
-                min_delay=0.8,
+        # 4. Initialize Agent Session with Advanced Options
+        session = AgentSession(
+            stt=deepgram.STT(
+                model=settings.deepgram.stt_model,
+                language=settings.deepgram.stt_language,
+                api_key=settings.deepgram.api_key,
             ),
-            interruption=InterruptionOptions(
-                enabled=True,
-                min_duration=0.3,
-                min_words=1,
+            llm=InstrumentedOpenAILLM(
+                model=settings.openai.model,
+                api_key=settings.openai.api_key,
+                parallel_tool_calls=False,
             ),
-        ),
-        max_tool_steps=5,
-        userdata=session_ctx,
-    )
+            tts=SarvamTTS(
+                api_key=settings.sarvam.api_key,
+                model=settings.sarvam.model,
+                speaker=settings.sarvam.speaker,
+                target_language_code=settings.sarvam.target_language_code,
+                sample_rate=settings.sarvam.sample_rate,
+                pace=settings.sarvam.pace,
+                temperature=settings.sarvam.temperature,
+                base_url=settings.sarvam.base_url,
+                stream_base_url=settings.sarvam.stream_base_url,
+            ),
+            vad=silero.VAD.load(),
+            turn_handling=TurnHandlingOptions(
+                turn_detection=MultilingualModel(),
+                endpointing=EndpointingOptions(
+                    mode="fixed",
+                    min_delay=0.8,
+                ),
+                interruption=InterruptionOptions(
+                    enabled=True,
+                    min_duration=0.3,
+                    min_words=1,
+                ),
+            ),
+            max_tool_steps=5,
+            userdata=session_ctx,
+        )
 
-    # 5. Attach SpatialReal Avatar
-    if settings.spatius.enabled:
-        try:
-            avatar = AvatarSession()
-            await avatar.start(session, room=ctx.room)
-        except Exception as exc:
-            session_ctx.log_error(f"Avatar startup failed: {exc}")
-            logger.warning("SpatialReal avatar startup failed: %s", exc)
+        # 5. Attach SpatialReal Avatar
+        if settings.spatius.enabled:
+            try:
+                avatar = AvatarSession()
+                await avatar.start(session, room=ctx.room)
+            except Exception as exc:
+                session_ctx.log_error(f"Avatar startup failed: {exc}")
+                logger.warning("SpatialReal avatar startup failed: %s", exc)
 
-    # 6. Start the Session with Persona and Audio Enhancement
-    await session.start(
-        agent=agent,
-        room=ctx.room,
-        room_options=room_io.RoomOptions(
-            audio_input=room_io.AudioInputOptions(),
-        ),
-    )
+        # 6. Start the Session with Persona and Audio Enhancement
+        await session.start(
+            agent=agent,
+            room=ctx.room,
+            room_options=room_io.RoomOptions(
+                audio_input=room_io.AudioInputOptions(),
+            ),
+        )
 
-    # 7. Dynamic Initial Greet using LLM
-    from prompts.persona import get_opening_message
+        # 7. Dynamic Initial Greet using LLM
+        from prompts.persona import get_opening_message
 
-    await session.generate_reply(
-        instructions=f"Greet the user warmly. Context for the greeting: {get_opening_message()}"
-    )
+        await session.generate_reply(
+            instructions=f"Greet the user warmly. Context for the greeting: {get_opening_message()}"
+        )
 
-    # Session lifecycle continues in the LiveKit agent server;
-    # metrics and session_id correlation are active for the session's duration.
+        sessions_total.labels(outcome="finished").inc()
+    except Exception:
+        sessions_total.labels(outcome="failed").inc()
+        raise
+    finally:
+        sessions_active.dec()
 
 
 if __name__ == "__main__":
