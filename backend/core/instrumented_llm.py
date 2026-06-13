@@ -38,6 +38,7 @@ class _GuardedStream:
                         "Guardrail blocked LLM output [%s]: %s. Text so far: %s",
                         category, desc, full_text[:200],
                     )
+                    await self._inner.aclose()
                     yield ChatChunk(
                         content=" I apologise, I am unable to respond to that. Let me refocus on your health intake."
                     )
