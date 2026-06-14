@@ -420,7 +420,7 @@ export default function IntakePage() {
 
   const [connection, setConnection] = useState<TokenConnection | null>(null);
   const [loading, setLoading] = useState(false);
-  const [roomName] = useState(() => `intake-${crypto.randomUUID()}`);
+  const [roomName] = useState(() => `intake-${crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)}`);
   const [isRegistrationComplete, setIsRegistrationComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -428,7 +428,7 @@ export default function IntakePage() {
     setLoading(true);
     setError(null);
     try {
-      const participantName = `patient-${crypto.randomUUID()}`;
+      const participantName = `patient-${crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
       const result = await getToken(roomName, participantName);
       setConnection(result);
     } catch (connectError) {
