@@ -13,7 +13,7 @@ _backend_dir = str(Path(__file__).parent)
 if _backend_dir not in sys.path:
     sys.path.insert(0, _backend_dir)
 
-from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException, Request, status
+from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import Response
@@ -66,7 +66,7 @@ async def limit_body_size(request: Request, call_next):
         return Response(status_code=413, content="Request body too large")
     return await call_next(request)
 
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+allowed_origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")]
 
 app.add_middleware(
     CORSMiddleware,
@@ -145,14 +145,13 @@ async def create_room_and_dispatch(room_name: str) -> None:
         settings.livekit.api_secret,
     )
     try:
-        try:
-            await lkapi.room.create_room(api.CreateRoomRequest(name=room_name))
-        except Exception as e:
-            logger.warning("Room creation failed: %s", e)
-
+        await lkapi.room.create_room(api.CreateRoomRequest(name=room_name))
         await lkapi.agent_dispatch.create_dispatch(
             api.CreateAgentDispatchRequest(room=room_name, agent_name=settings.agent.name)
         )
+    except Exception as e:
+        logger.warning("Room creation or dispatch failed for room '%s': %s", room_name, e)
+        raise
     finally:
         await lkapi.aclose()
 
@@ -162,7 +161,6 @@ async def create_room_and_dispatch(room_name: str) -> None:
 async def token(
     request: Request,
     body: TokenRequest,
-    background_tasks: BackgroundTasks,
     clinic_id: str = Depends(get_current_clinic_id) # Protect this endpoint
 ):
     room_name = body.room or settings.agent.default_room
@@ -175,6 +173,10 @@ async def token(
 
     # Store clinic_id in room metadata so the agent knows which clinic to save data for
     room_name = f"{clinic_id}_{room_name}"
+
+    # Create room and dispatch agent before returning the token
+    # This ensures the user never connects to an empty room
+    await create_room_and_dispatch(room_name)
 
     jwt = (
         api.AccessToken(settings.livekit.api_key, settings.livekit.api_secret)
@@ -192,8 +194,6 @@ async def token(
         )
         .to_jwt()
     )
-
-    background_tasks.add_task(create_room_and_dispatch, room_name)
 
     return {
         "token": jwt,
