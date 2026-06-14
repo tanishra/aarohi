@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import signal
@@ -181,8 +182,11 @@ async def entrypoint(ctx: JobContext) -> None:
         # 7. Dynamic Initial Greet using LLM
         from prompts.persona import get_opening_message
 
-        await session.generate_reply(
-            instructions=f"Greet the user warmly. Context for the greeting: {get_opening_message()}"
+        await asyncio.wait_for(
+            session.generate_reply(
+                instructions=f"Greet the user warmly. Context for the greeting: {get_opening_message()}"
+            ),
+            timeout=30,
         )
 
         sessions_total.labels(outcome="finished").inc()
