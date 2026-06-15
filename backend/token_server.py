@@ -229,6 +229,5 @@ if __name__ == "__main__":
         "token_server:app",
         host="0.0.0.0",
         port=8080,
-        reload=True,
         limit_max_request_body=MAX_BODY_SIZE,
     )
