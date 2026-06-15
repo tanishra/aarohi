@@ -9,12 +9,8 @@ type TokenPayload = {
 };
 
 function getBackendTokenEndpoint() {
-  return (
-    process.env.BACKEND_TOKEN_ENDPOINT ??
-    process.env.TOKEN_SERVER_URL ??
-    process.env.VITE_TOKEN_ENDPOINT ??
-    "http://localhost:8080/token"
-  );
+  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+  return `${base}/token`;
 }
 
 export async function getToken(roomName: string, participantName: string) {
