@@ -90,6 +90,7 @@ class SarvamTTS(tts.TTS):
         self._base_url = base_url
         self._stream_base_url = stream_base_url
         self._session = http_session
+        self._owns_session = False
         self._circuit_breaker = CircuitBreaker(
             name="sarvam-tts",
             failure_threshold=int(os.getenv("SARVAM_CIRCUIT_BREAKER_THRESHOLD", "3")),
@@ -115,10 +116,13 @@ class SarvamTTS(tts.TTS):
     def _ensure_session(self) -> aiohttp.ClientSession:
         if not self._session:
             self._session = utils.http_context.http_session()
+            self._owns_session = True
         return self._session
 
     async def aclose(self) -> None:
-        return None
+        if self._session and self._owns_session:
+            await self._session.close()
+            self._session = None
 
 
 class _SarvamChunkedStream(tts.ChunkedStream):
