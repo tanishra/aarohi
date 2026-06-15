@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 # Local Fallback Database
 LOCAL_DB_PATH = os.getenv("LOCAL_DB_PATH", "aarohi_fallback.db")
 sqlite_url = f"sqlite:///{LOCAL_DB_PATH}"
-engine_local = create_engine(sqlite_url, echo=False)
+engine_local = create_engine(sqlite_url, echo=False, connect_args={"check_same_thread": False})
 
 # Cloud Database (PostgreSQL, MySQL, etc.)
 CLOUD_DB_URL = os.getenv("CLOUD_DB_URL")
