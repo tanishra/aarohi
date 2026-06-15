@@ -161,16 +161,7 @@ async def entrypoint(ctx: JobContext) -> None:
             userdata=session_ctx,
         )
 
-        # 5. Attach SpatialReal Avatar
-        if settings.spatius.enabled:
-            try:
-                avatar = AvatarSession()
-                await avatar.start(session, room=ctx.room)
-            except Exception as exc:
-                session_ctx.log_error(f"Avatar startup failed: {exc}")
-                logger.warning("SpatialReal avatar startup failed: %s", exc)
-
-        # 6. Start the Session with Persona and Audio Enhancement
+        # 5. Start the Session with Persona and Audio Enhancement
         await session.start(
             agent=agent,
             room=ctx.room,
@@ -178,6 +169,15 @@ async def entrypoint(ctx: JobContext) -> None:
                 audio_input=room_io.AudioInputOptions(),
             ),
         )
+
+        # 6. Attach SpatialReal Avatar (after session start so the session is active)
+        if settings.spatius.enabled:
+            try:
+                avatar = AvatarSession()
+                await avatar.start(session, room=ctx.room)
+            except Exception as exc:
+                session_ctx.log_error(f"Avatar startup failed: {exc}")
+                logger.warning("SpatialReal avatar startup failed: %s", exc)
 
         # 7. Dynamic Initial Greet using LLM
         from prompts.persona import get_opening_message
