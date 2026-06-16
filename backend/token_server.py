@@ -165,6 +165,9 @@ async def token(
 ):
     room_name = body.room or settings.agent.default_room
 
+    if len(room_name) > 64 or not room_name.replace("-", "").replace("_", "").isalnum():
+        raise HTTPException(status_code=422, detail="Invalid room name: must be <= 64 characters, alphanumeric with - and _")
+
     identity = (
         body.identity.strip()
         if body.identity and body.identity.strip()
