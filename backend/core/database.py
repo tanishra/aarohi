@@ -11,7 +11,25 @@ logger = logging.getLogger(__name__)
 # Local Fallback Database
 LOCAL_DB_PATH = os.getenv("LOCAL_DB_PATH", "aarohi_fallback.db")
 sqlite_url = f"sqlite:///{LOCAL_DB_PATH}"
-engine_local = create_engine(sqlite_url, echo=False, connect_args={"check_same_thread": False})
+engine_local = create_engine(
+    sqlite_url,
+    echo=False,
+    connect_args={"check_same_thread": False},
+    pool_timeout=10,
+)
+
+def _exec_with_retry(fn, max_retries=3, base_delay=0.5):
+    last_error = None
+    for attempt in range(max_retries):
+        try:
+            return fn()
+        except Exception as e:
+            last_error = e
+            if "database is locked" in str(e).lower() and attempt < max_retries - 1:
+                time.sleep(base_delay * (2 ** attempt))
+                continue
+            raise
+    raise last_error  # pragma: no cover
 
 # Cloud Database (PostgreSQL, MySQL, etc.)
 CLOUD_DB_URL = os.getenv("CLOUD_DB_URL")
@@ -85,11 +103,13 @@ def save_intake(data: dict, clinic_id: str = "admin") -> bool:
             except Exception as e:
                 logger.warning("Cloud DB failed, falling back to local: %s", e)
 
-        # Fallback to Local DB
-        intake_fallback = PatientIntake(**encrypted_data, sync_status="pending")
-        with Session(engine_local) as session:
-            session.add(intake_fallback)
-            session.commit()
+        # Fallback to Local DB with retry for SQLite contention
+        def _save_local():
+            intake = PatientIntake(**encrypted_data, sync_status="pending")
+            with Session(engine_local) as session:
+                session.add(intake)
+                session.commit()
+        _exec_with_retry(_save_local)
         elapsed = time.monotonic() - start
         logger.info("Intake saved to LOCAL fallback (pending) for clinic %s (%.3fs)", clinic_id, elapsed)
         return True
@@ -111,8 +131,8 @@ def get_intake(intake_id: int, from_local: bool = False) -> Optional[dict]:
                 return None
 
             data = intake.model_dump()
-            data["name"] = decrypt_data(data["name"])
-            data["contact"] = decrypt_data(data["contact"])
+            data["name"] = decrypt_data(data["name"]) or ""
+            data["contact"] = decrypt_data(data["contact"]) or ""
             elapsed = time.monotonic() - start
             logger.info("Intake %d retrieved in %.3fs", intake_id, elapsed)
             return data
@@ -146,8 +166,7 @@ def sync_local_to_cloud():
                     local_committed = False
                     try:
                         # Mark local as synced FIRST — prevents duplication on crash
-                        record.sync_status = "synced"
-                        session_local.commit()
+                        _exec_with_retry(lambda: _mark_synced(session_local, record))
                         local_committed = True
 
                         # Now write to cloud
@@ -165,8 +184,7 @@ def sync_local_to_cloud():
                         if local_committed:
                             # Revert local status to pending so it can be retried
                             try:
-                                record.sync_status = "pending"
-                                session_local.commit()
+                                _exec_with_retry(lambda: _mark_pending(session_local, record))
                             except Exception:
                                 session_local.rollback()
                         else:
@@ -180,3 +198,12 @@ def sync_local_to_cloud():
     except Exception as e:
         elapsed = time.monotonic() - start
         logger.error("Sync process failed after %.3fs: %s", elapsed, e)
+
+
+def _mark_synced(session_local: Session, record: PatientIntake) -> None:
+    record.sync_status = "synced"
+    session_local.commit()
+
+def _mark_pending(session_local: Session, record: PatientIntake) -> None:
+    record.sync_status = "pending"
+    session_local.commit()
