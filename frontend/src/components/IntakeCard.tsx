@@ -8,6 +8,7 @@ import { useIntakeStore } from "@/store/useIntakeStore";
 function prettifyKey(key: string): string {
   return key
     .replace(/[_-]+/g, " ")
+    .replace(/([A-Z])/g, " $1")
     .replace(/\s+/g, " ")
     .trim()
     .replace(/\b\w/g, (character) => character.toUpperCase());
