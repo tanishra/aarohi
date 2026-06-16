@@ -1,3 +1,4 @@
+import hashlib
 import os
 import base64
 from cryptography.fernet import Fernet
@@ -13,7 +14,7 @@ def _get_fernet() -> Fernet:
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=b"aarohi-salt-v1", # A static salt for the application
+        salt=hashlib.sha256(SECRET_KEY.encode()).digest(),
         iterations=100000,
     )
     key = base64.urlsafe_b64encode(kdf.derive(SECRET_KEY.encode()))
@@ -27,13 +28,11 @@ def encrypt_data(data: str) -> str:
         return data
     return _fernet_instance.encrypt(data.encode()).decode()
 
-def decrypt_data(encrypted_data: str) -> str:
+def decrypt_data(encrypted_data: str) -> str | None:
     """Decrypts a base64 encoded encrypted string."""
     if not encrypted_data:
         return encrypted_data
     try:
         return _fernet_instance.decrypt(encrypted_data.encode()).decode()
     except Exception:
-        # If decryption fails (e.g. key changed, or data was not encrypted),
-        # return the original string to prevent crashing on legacy data.
-        return encrypted_data
+        return None
