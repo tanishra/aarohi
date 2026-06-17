@@ -75,6 +75,7 @@ export async function registerAction(username: string, password: string) {
 
     return { success: true };
   } catch (e) {
+    console.error(e);
     return { error: "Failed to connect to server." };
   }
 }
@@ -112,6 +113,7 @@ export async function loginAction(username: string, password: string) {
 
     return { success: true };
   } catch (e) {
+    console.error(e);
     return { error: "Failed to connect to server." };
   }
 }
