@@ -15,7 +15,7 @@ def _get_fernet() -> Fernet:
         algorithm=hashes.SHA256(),
         length=32,
         salt=hashlib.sha256(SECRET_KEY.encode()).digest(),
-        iterations=100000,
+        iterations=600000,
     )
     key = base64.urlsafe_b64encode(kdf.derive(SECRET_KEY.encode()))
     return Fernet(key)
