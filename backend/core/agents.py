@@ -94,7 +94,9 @@ class AarohiTools:
         start = time.monotonic()
         logger.info("Tool submit_intake_report called for patient at clinic=%s", self.clinic_id)
 
-        # Input validation
+        # Input validation with explicit type coercion
+        severity_score = int(severity_score)
+        age = int(age)
         if severity_score < 1 or severity_score > 10:
             return "ERROR: Severity score must be between 1 and 10. Please ask the patient again."
         if age < 0 or age > 150:
