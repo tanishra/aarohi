@@ -23,6 +23,7 @@ class _GuardedStream:
     def __init__(self, inner: openai.LLMStream):
         self._inner = inner
         self._text_buffer: list[str] = []
+        self._full_text: str = ""
 
     def __aiter__(self):
         return self._guard()
@@ -31,12 +32,12 @@ class _GuardedStream:
         async for chunk in self._inner:
             if chunk.content:
                 self._text_buffer.append(chunk.content)
-                full_text = "".join(self._text_buffer)
-                is_safe, category, desc = validate_llm_output(full_text)
+                self._full_text += chunk.content
+                is_safe, category, desc = validate_llm_output(self._full_text)
                 if not is_safe:
                     logger.error(
                         "Guardrail blocked LLM output [%s]: %s. Text so far: %s",
-                        category, desc, full_text[:200],
+                        category, desc, self._full_text[:200],
                     )
                     await self._inner.aclose()
                     yield ChatChunk(
