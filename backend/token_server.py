@@ -176,6 +176,9 @@ async def token(
         else f"browser-{uuid4().hex[:8]}"
     )
 
+    if len(identity) > 64 or not identity.replace("-", "").replace("_", "").isalnum():
+        raise HTTPException(status_code=422, detail="Invalid identity: must be <= 64 characters, alphanumeric with - and _")
+
     # Store clinic_id in room metadata so the agent knows which clinic to save data for
     room_name = f"{clinic_id}_{room_name}"
 
