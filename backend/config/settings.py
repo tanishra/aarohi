@@ -20,6 +20,26 @@ def optional(key: str, default: str | None = None) -> str | None:
     return value
 
 
+def _safe_int(key: str, default: int) -> int:
+    raw = os.getenv(key)
+    if raw is None or raw == "":
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
+
+def _safe_float(key: str, default: float) -> float:
+    raw = os.getenv(key)
+    if raw is None or raw == "":
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        return default
+
+
 @dataclass(frozen=True)
 class LiveKitConfig:
     url: str
@@ -100,9 +120,9 @@ def load_settings() -> Settings:
             model=optional("SARVAM_TTS_MODEL", "bulbul:v3") or "bulbul:v3",
             speaker=optional("SARVAM_TTS_SPEAKER", "priya") or "priya",
             target_language_code=optional("SARVAM_TTS_LANGUAGE", "auto") or "auto",
-            sample_rate=int(optional("SARVAM_TTS_SAMPLE_RATE", "24000") or "24000"),
-            pace=float(optional("SARVAM_TTS_PACE", "0.92") or "0.92"),
-            temperature=float(optional("SARVAM_TTS_TEMPERATURE", "0.6") or "0.6"),
+            sample_rate=_safe_int("SARVAM_TTS_SAMPLE_RATE", 24000),
+            pace=_safe_float("SARVAM_TTS_PACE", 0.92),
+            temperature=_safe_float("SARVAM_TTS_TEMPERATURE", 0.6),
             base_url=optional("SARVAM_TTS_URL", "https://api.sarvam.ai/text-to-speech")
             or "https://api.sarvam.ai/text-to-speech",
             stream_base_url=optional(
