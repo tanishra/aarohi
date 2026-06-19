@@ -3,8 +3,6 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
-from dotenv import load_dotenv
-
 
 def require(key: str) -> str:
     value = os.getenv(key)
@@ -97,8 +95,6 @@ class Settings:
 
 
 def load_settings() -> Settings:
-    load_dotenv()
-
     return Settings(
         livekit=LiveKitConfig(
             url=require("LIVEKIT_URL"),
