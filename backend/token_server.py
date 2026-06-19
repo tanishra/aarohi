@@ -79,7 +79,6 @@ app.add_middleware(
 class TokenRequest(BaseModel):
     room: str | None = None
     identity: str | None = None
-    clinic_id: str | None = None
 
 class RegisterRequest(BaseModel):
     username: str
