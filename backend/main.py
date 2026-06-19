@@ -25,7 +25,7 @@ from core.context import SessionContext
 from core.database import init_db
 from core.instrumented_llm import InstrumentedOpenAILLM
 from core.sarvam_tts import SarvamTTS
-from core.metrics import sessions_active, sessions_total, turn_count
+from core.metrics import sessions_active, sessions_total, turn_count  # noqa: F811
 
 from livekit import agents
 from livekit.agents import (
@@ -57,7 +57,7 @@ try:
 
     _start_metrics(_prometheus_port)
     logger.info("Metrics HTTP server started on port %d", _prometheus_port)
-except Exception as exc:
+except (OSError, ImportError) as exc:
     logger.warning("Prometheus metrics server not available: %s", exc)
 
 # Graceful shutdown flag
@@ -190,6 +190,7 @@ async def entrypoint(ctx: JobContext) -> None:
         )
 
         sessions_total.labels(outcome="finished").inc()
+        turn_count.observe(session_ctx.turn_number)
     except Exception:
         sessions_total.labels(outcome="failed").inc()
         raise
