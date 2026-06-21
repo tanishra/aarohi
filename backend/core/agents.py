@@ -169,9 +169,14 @@ class IntakeAgent(Agent):
     def __init__(self, job_ctx: JobContext) -> None:
         # Extract clinic_id from room name (formatted as clinicid_roomid)
         room_name = job_ctx.room.name
-        clinic_id = "admin" # fallback
         if "_" in room_name:
             clinic_id = room_name.split("_")[0]
+        else:
+            logger.warning(
+                "Room name '%s' has no underscore — cannot extract clinic_id",
+                room_name,
+            )
+            clinic_id = "unknown"
 
         self._aarohi_tools = AarohiTools(job_ctx, clinic_id)
         super().__init__(
