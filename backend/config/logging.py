@@ -45,7 +45,7 @@ def configure_logging() -> None:
 
     formatters: dict = {
         "standard": {
-            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s [%(session_id)s]",
             "datefmt": "%Y-%m-%dT%H:%M:%S%z",
         },
         "json": json_formatter,
@@ -76,7 +76,7 @@ def configure_logging() -> None:
             "core": {"level": level, "handlers": ["console"], "propagate": False},
             "config": {"level": level, "handlers": ["console"], "propagate": False},
             "prompts": {"level": level, "handlers": ["console"], "propagate": False},
-            "uvicorn": {"level": level.upper(), "handlers": ["console"], "propagate": False},
+            "uvicorn": {"level": level, "handlers": ["console"], "propagate": False},
             "": {"level": level, "handlers": ["console"]},
         },
     })
