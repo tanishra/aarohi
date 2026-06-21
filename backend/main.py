@@ -72,6 +72,12 @@ def _handle_sigterm(signum: int, frame) -> None:
 
 signal.signal(signal.SIGTERM, _handle_sigterm)
 
+# Initialize the local database once at startup
+try:
+    init_db()
+except Exception as exc:
+    logger.warning("Database init failed: %s", exc)
+
 # High-level Agent Server Pattern
 server = AgentServer()
 
@@ -84,12 +90,6 @@ async def entrypoint(ctx: JobContext) -> None:
 
     settings = load_settings()
     session_start_time = time.monotonic()
-
-    # Initialize the local database
-    try:
-        init_db()
-    except Exception as exc:
-        logger.warning("Database init failed: %s", exc)
 
     # 1. Connect to the room
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
