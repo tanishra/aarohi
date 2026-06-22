@@ -11,6 +11,14 @@ SECRET_KEY = _settings.jwt_secret_key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 1 day
 
+if len(SECRET_KEY) < 32:
+    import warnings
+    warnings.warn(
+        f"JWT secret key is only {len(SECRET_KEY)} bytes; recommended >= 32 bytes "
+        "for HS256 security. Set JWT_SECRET_KEY to a longer value.",
+        stacklevel=2,
+    )
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
