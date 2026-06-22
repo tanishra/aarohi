@@ -1,7 +1,5 @@
 import asyncio
-import os
 import time
-from unittest.mock import patch
 
 from core.circuit_breaker import CircuitBreaker, CircuitState
 
@@ -89,14 +87,10 @@ def test_custom_timeout():
     assert _run(cb.allow_request()) is True
 
 
-def test_env_based_config():
-    with patch.dict(os.environ, {
-        "MYAPP_CIRCUIT_BREAKER_THRESHOLD": "4",
-        "MYAPP_CIRCUIT_BREAKER_TIMEOUT": "120",
-    }):
-        cb = CircuitBreaker(name="env-test", env_prefix="MYAPP")
-        assert cb.failure_threshold == 4
-        assert cb.recovery_timeout == 120
+def test_explicit_config():
+    cb = CircuitBreaker(name="explicit-test", failure_threshold=4, recovery_timeout=120)
+    assert cb.failure_threshold == 4
+    assert cb.recovery_timeout == 120
 
 
 def test_zero_threshold_opens_immediately():
