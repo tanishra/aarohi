@@ -103,28 +103,26 @@ def load_settings() -> Settings:
         ),
         openai=OpenAIConfig(
             api_key=require("OPENAI_API_KEY"),
-            model=optional("OPENAI_MODEL", "gpt-4o-mini") or "gpt-4o-mini",
+            model=optional("OPENAI_MODEL", "gpt-4o-mini"),
         ),
         deepgram=DeepgramConfig(
             api_key=require("DEEPGRAM_API_KEY"),
-            stt_model=optional("STT_MODEL", "nova-3") or "nova-3",
-            stt_language=optional("STT_LANGUAGE", "multi") or "multi",
-            tts_model=optional("TTS_VOICE", "aura-asteria-en") or "aura-asteria-en",
+            stt_model=optional("STT_MODEL", "nova-3"),
+            stt_language=optional("STT_LANGUAGE", "multi"),
+            tts_model=optional("TTS_VOICE", "aura-asteria-en"),
         ),
         sarvam=SarvamConfig(
             api_key=require("SARVAM_API_KEY"),
-            model=optional("SARVAM_TTS_MODEL", "bulbul:v3") or "bulbul:v3",
-            speaker=optional("SARVAM_TTS_SPEAKER", "priya") or "priya",
-            target_language_code=optional("SARVAM_TTS_LANGUAGE", "auto") or "auto",
+            model=optional("SARVAM_TTS_MODEL", "bulbul:v3"),
+            speaker=optional("SARVAM_TTS_SPEAKER", "priya"),
+            target_language_code=optional("SARVAM_TTS_LANGUAGE", "auto"),
             sample_rate=_safe_int("SARVAM_TTS_SAMPLE_RATE", 24000),
             pace=_safe_float("SARVAM_TTS_PACE", 0.92),
             temperature=_safe_float("SARVAM_TTS_TEMPERATURE", 0.6),
-            base_url=optional("SARVAM_TTS_URL", "https://api.sarvam.ai/text-to-speech")
-            or "https://api.sarvam.ai/text-to-speech",
+            base_url=optional("SARVAM_TTS_URL", "https://api.sarvam.ai/text-to-speech"),
             stream_base_url=optional(
                 "SARVAM_TTS_STREAM_URL", "https://api.sarvam.ai/text-to-speech/stream"
-            )
-            or "https://api.sarvam.ai/text-to-speech/stream",
+            ),
         ),
         spatius=SpatiusConfig(
             enabled=(optional("SPATIUS_ENABLED", "true") or "true").lower() != "false",
