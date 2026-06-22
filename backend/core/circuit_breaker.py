@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import time
 from enum import Enum
 
@@ -21,18 +20,10 @@ class CircuitBreaker:
         name: str = "",
         failure_threshold: int | None = None,
         recovery_timeout: float | None = None,
-        env_prefix: str = "",
     ) -> None:
-        def _env(key: str, default: str) -> str:
-            return os.getenv(f"{env_prefix}_{key}" if env_prefix else key, default)
-
         self.name = name
-        self.failure_threshold = max(1, failure_threshold if failure_threshold is not None else int(
-            _env("CIRCUIT_BREAKER_THRESHOLD", "3")
-        ))
-        self.recovery_timeout = recovery_timeout or float(
-            _env("CIRCUIT_BREAKER_TIMEOUT", "300")
-        )
+        self.failure_threshold = max(1, failure_threshold if failure_threshold is not None else 3)
+        self.recovery_timeout = recovery_timeout or 300.0
         self.failure_count = 0
         self._last_failure_time = 0.0
         self._state = CircuitState.CLOSED
