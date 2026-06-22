@@ -14,8 +14,7 @@ sqlite_url = f"sqlite:///{LOCAL_DB_PATH}"
 engine_local = create_engine(
     sqlite_url,
     echo=False,
-    connect_args={"check_same_thread": False},
-    pool_timeout=10,
+    connect_args={"check_same_thread": False, "timeout": 15},
 )
 
 def _exec_with_retry(fn, max_retries=3, base_delay=0.5):
@@ -82,10 +81,9 @@ def save_intake(data: dict, clinic_id: str = "admin") -> bool:
     try:
         # Encrypt PII
         encrypted_data = data.copy()
-        if "name" in encrypted_data:
-            encrypted_data["name"] = encrypt_data(str(encrypted_data["name"]))
-        if "contact" in encrypted_data:
-            encrypted_data["contact"] = encrypt_data(str(encrypted_data["contact"]))
+        for pii_field in ("name", "contact", "complaint", "medications", "conditions"):
+            if pii_field in encrypted_data and encrypted_data[pii_field]:
+                encrypted_data[pii_field] = encrypt_data(str(encrypted_data[pii_field]))
 
         # Inject clinic_id
         encrypted_data["clinic_id"] = clinic_id
