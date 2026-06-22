@@ -14,6 +14,13 @@ function getBackendTokenEndpoint() {
 }
 
 export async function getToken(roomName: string, participantName: string) {
+  if (!roomName || roomName.length > 64 || !/^[a-zA-Z0-9_-]+$/.test(roomName)) {
+    throw new Error("Invalid room name: must be 1-64 characters, alphanumeric with - and _");
+  }
+  if (!participantName || participantName.length > 64 || !/^[a-zA-Z0-9_-]+$/.test(participantName)) {
+    throw new Error("Invalid participant name: must be 1-64 characters, alphanumeric with - and _");
+  }
+
   const endpoint = getBackendTokenEndpoint();
   const cookieStore = await cookies();
   const token = cookieStore.get("aarohi_token")?.value;
