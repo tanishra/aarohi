@@ -115,16 +115,17 @@ class AarohiTools:
             if len(_field_val) > _max_field_len:
                 return f"ERROR: {_field_name} exceeds maximum length. Please provide a shorter value."
 
+        conditions_str = ", ".join(known_conditions) if known_conditions else "None"
+        medications_str = medications if medications else "None"
         data = {
             "patient_name": patient_name,
             "age": str(age) if age > 0 else "Unknown",
             "gender": gender,
-            "contact_number": contact_number,
             "chief_complaint": chief_complaint,
             "symptom_duration": symptom_duration,
             "severity_score": f"{severity_score}/10",
-            "current_medications": medications,
-            "known_conditions": known_conditions
+            "current_medications": medications_str,
+            "known_conditions": conditions_str,
         }
         
         success = save_intake({
@@ -136,7 +137,7 @@ class AarohiTools:
             "duration": symptom_duration,
             "severity": severity_score,
             "medications": medications,
-            "conditions": known_conditions
+            "conditions": known_conditions,
         }, clinic_id=self.clinic_id)
 
         if success:

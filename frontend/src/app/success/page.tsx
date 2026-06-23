@@ -20,8 +20,8 @@ const detailLabels: Record<string, string> = {
   chief_complaint: "Chief Complaint",
   symptom_duration: "Symptom Duration",
   severity_score: "Severity",
-  known_conditions: "Known Conditions",
   current_medications: "Current Medications",
+  known_conditions: "Known Conditions",
 };
 
 const nextSteps = [
