@@ -58,6 +58,12 @@ def _parse_wav_header(data: bytes) -> tuple[int, int, int, int]:
     if data_offset == 0:
         raise ValueError("No data chunk found in WAV header")
 
+    if sample_rate == 16000 and num_channels == 1 and bits_per_sample == 16:
+        logger.warning(
+            "WAV fmt chunk missing — using defaults (16kHz, mono, 16-bit). "
+            "If audio sounds wrong, the TTS response format may have changed."
+        )
+
     return sample_rate, num_channels, bits_per_sample, data_offset
 
 
