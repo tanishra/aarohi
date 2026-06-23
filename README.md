@@ -15,8 +15,8 @@
     <a href="https://deepgram.com/" target="_blank" rel="noreferrer">
       <img src="https://img.shields.io/badge/Deepgram-13EF95?style=for-the-badge&logo=deepgram&logoColor=black" alt="Deepgram" />
     </a>
-    <a href="https://spatialreal.ai/" target="_blank" rel="noreferrer">
-      <img src="https://img.shields.io/badge/SpatialReal-FF4F00?style=for-the-badge&logo=webassembly&logoColor=white" alt="SpatialReal" />
+    <a href="https://spatius.ai/" target="_blank" rel="noreferrer">
+      <img src="https://img.shields.io/badge/Spatius-FF4F00?style=for-the-badge&logo=webassembly&logoColor=white" alt="Spatius" />
     </a>
     <a href="https://www.python.org/" target="_blank" rel="noreferrer">
       <img src="https://img.shields.io/badge/Python_3.12-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
@@ -40,68 +40,42 @@ graph TD
     subgraph "The Brain"
     AgentWorker <-->|Transcripts| STT[Deepgram STT]
     AgentWorker <-->|Reasoning| LLM[OpenAI GPT-4o]
-    AgentWorker <-->|Voice| TTS[Google Neural TTS]
+    AgentWorker <-->|Voice| TTS[Sarvam TTS]
     end
     
     AgentWorker -->|Structured Data| DB[(Local SQL / Supabase)]
-    Frontend <-->|Rendering| Avatar[SpatialReal 3D Engine]
+    Frontend <-->|Rendering| Avatar[Spatius Avatar]
 ```
 
 ---
 
-<!-- ## Visual Technology: SpatialReal
-Aarohi features a professional nurse persona powered by [SpatialReal](https://spatialreal.ai/). Unlike traditional cloud-based video bots, SpatialReal uses on-device 3D rendering via WebAssembly (WASM) to provide a high-fidelity, empathetic presence with industry-leading performance.
+## Spatius — Real-Time Avatar Rendering
 
-| Feature | SpatialReal (On-Device) | Cloud Video Avatars |
-| :--- | :--- | :--- |
-| **Latency** | <300ms | 300–2000ms |
-| **Cost** | 1/100 compute cost | High cloud usage |
-| **Quality** | Natural & controllable | Stiff or uncanny output |
-| **Bandwidth** | 10–20KB/s | ≥2 Mbps streaming |
-| **Integration** | Simple SDK | Complex backend | -->
+Spatius powers Aarohi's 3D avatar. It turns avatar speech audio into real-time motion data. Your client renders the avatar locally, so you do not need to stream finished avatar video.
 
-# SpatialReal
-SpatialReal is the next-generation AI infrastructure for empathetic human-AI interactions. We build **real-time**, **high-fidelity**, and **cost-effective** digital avatar interactions through on-device rendering technology.
+> Full documentation: https://docs.spatius.ai/llms.txt
 
-<Frame>
-  <img src="https://mintcdn.com/spatialwalk-6179c111/wCBKRztgNfKgzyVo/images/flow.png?fit=max&auto=format&n=wCBKRztgNfKgzyVo&q=85&s=f1ff8935c8c99e92b7b99555de514fa1" alt="pipeline" width="3300" height="1586" data-path="images/flow.png" />
-</Frame>
+### Core Components
 
-<p style={{ fontSize: '0.875rem', opacity: 0.75, marginTop: 8 }}>
-  In the pipeline diagram: ASR = Automatic Speech Recognition, LLM = Large Language Model, TTS = Text-to-Speech, S2S = Speech-to-Speech (e.g. Gemini Live).
-</p>
+| Term | What it is |
+| --- | --- |
+| **Spatius** | The platform — [Spatius Studio](https://app.spatius.ai) for managing apps and avatars, Motion Server in the cloud, and the AvatarKit SDKs you ship in your app. |
+| **AvatarKit** | The client SDK family that downloads avatar assets, renders the avatar locally, and plays synchronized audio. Available for Web, iOS, Android, and Flutter. |
+| **Motion Server** | The Spatius cloud service that receives avatar speech audio and returns lip-sync motion data, ~10–15 KB/s. |
 
-## Why SpatialReal?
+### Integration Paths
 
-Traditional digital avatar solutions force painful trade-offs between cost, visual quality, and real-time performance. SpatialReal solves this trilemma:
+| Path | Description |
+| --- | --- |
+| [LiveKit Agents Integration](https://docs.spatius.ai/livekit-agents/overview) | Add `livekit-plugins-spatius` to your LiveKit Agents worker. Web client today. |
+| [Direct Mode](https://docs.spatius.ai/direct-mode/overview) | Your client connects to Motion Server directly. Smallest footprint; your backend only mints Session Tokens. |
+| [Backend Mode](https://docs.spatius.ai/backend-mode/overview) | Your backend owns ASR, LLM, TTS, the Server SDK, and the downstream transport. |
 
-| Metric            | Traditional Cloud Rendering  | SpatialReal On-Device          |
-| ----------------- | ---------------------------- | ------------------------------ |
-| **Bandwidth**     | 1-2 MB/s (Video Stream)      | 10-20 KB/s (Driver Data)       |
-| **Cost**          | High GPU rental costs        | Ultra-low edge compute         |
-| **Latency**       | > 3s                         | \< 1.5s                        |
-| **Compatibility** | High-speed network dependent | 99% of Android/iOS/Web devices |
+### Quick Links
 
-## Use Cases
-
-* **Online Education** - Immersive 1-on-1 tutoring with precise lip-sync for language learning and K12
-* **Recruitment & Training** - 7x24h AI interviewers and roleplay training simulations
-* **Customer Service** - Brand ambassadors with visual eye contact that builds emotional connection
-
-## Creating an account
-
-### Sign Up
-
-Visit [SpatialReal Studio](https://app.spatialreal.ai/) to create your free account.
-
-### SpatialReal Studio
-
-[SpatialReal Studio](https://app.spatialreal.ai/) is your control center where you can:
-
-* Free access to a large avatar library
-* Manage your API keys
-* Monitor your usage
-* Control your subscription
+- [Get credentials](https://docs.spatius.ai/getting-started/credentials) — App ID, Avatar ID, Session Token, API Key
+- [Choose your integration path](https://docs.spatius.ai/getting-started/how-to-integrate) — Compare latency, client support, and effort
+- [Run a quickstart](https://docs.spatius.ai/quickstarts/overview) — Web, iOS, Android, and Flutter first-run guides
 
 ---
 
@@ -121,9 +95,9 @@ Aarohi is fully containerized. You can spin up the entire stack (Frontend, FastA
    ENCRYPTION_SECRET_KEY=your_encryption_key
    CLOUD_DB_URL=postgresql://... # Optional
 
-   # Frontend
-   NEXT_PUBLIC_SPATIALREAL_APP_ID=your_app_id
-   NEXT_PUBLIC_SPATIALREAL_AVATAR_ID=your_avatar_id
+    # Frontend
+    NEXT_PUBLIC_SPATIUS_APP_ID=your_app_id
+    NEXT_PUBLIC_SPATIUS_AVATAR_ID=your_avatar_id
    ```
 2. Build and start the cluster:
    ```bash
@@ -155,7 +129,6 @@ pnpm dev
 - **Cloud-First Database with Local Fallback:** Uses `SQLModel` to attempt saving data to a cloud PostgreSQL database first. If the cloud is down, it safely falls back to a local SQLite database and automatically syncs the records in the background when the cloud recovers.
 - **Application-Level PII Encryption:** Sensitive patient data (Protected Health Information) is symmetrically encrypted in memory using `cryptography` before being saved to the database, ensuring zero-knowledge at rest.
 - **Strict Data Validation:** Utilizes strict Pydantic schemas within the AI Agent to force the LLM to output cleanly typed integers and enums, avoiding fragile string-parsing hacks.
-- **Robust State Management:** The Next.js frontend uses `zustand` for reliable, cross-navigation global state management.
 
 ## What Aarohi Does
 - **Structured Intake:** Collects Name, Symptoms, Pain Severity, and Medical History.
