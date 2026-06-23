@@ -106,5 +106,4 @@ class InstrumentedOpenAILLM(openai.LLM):
                 await self._breaker.record_failure()
                 raise
 
-        await self._breaker.record_failure()
         raise APIConnectionError("llm chat failed after all retries")
