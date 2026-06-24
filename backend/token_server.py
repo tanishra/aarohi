@@ -64,8 +64,12 @@ MAX_BODY_SIZE = 1_048_576  # 1 MB
 @app.middleware("http")
 async def limit_body_size(request: Request, call_next):
     content_length = request.headers.get("content-length")
-    if content_length and int(content_length) > MAX_BODY_SIZE:
-        return Response(status_code=413, content="Request body too large")
+    if content_length:
+        try:
+            if int(content_length) > MAX_BODY_SIZE:
+                return Response(status_code=413, content="Request body too large")
+        except ValueError:
+            return Response(status_code=400, content="Invalid Content-Length header")
     return await call_next(request)
 
 allowed_origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")]
@@ -112,7 +116,10 @@ async def register(request: Request, body: RegisterRequest):
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="A clinic with this ID already exists",
+                detail={
+                    "error_code": "AUTH_DUPLICATE_USERNAME",
+                    "message": "A clinic with this ID already exists",
+                },
             )
 
         hashed = get_password_hash(body.password)
@@ -139,7 +146,10 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
     if locked_until > now:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Account locked. Try again in {int(locked_until - now)} seconds.",
+            detail={
+                "error_code": "AUTH_LOCKED",
+                "message": f"Account locked. Try again in {int(locked_until - now)} seconds.",
+            },
         )
 
     with Session(engine_local) as session:
@@ -153,7 +163,10 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
                 _failed_logins[username] = (attempts, 0.0)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password",
+                detail={
+                    "error_code": "AUTH_INVALID_CREDENTIALS",
+                    "message": "Incorrect username or password",
+                },
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
@@ -194,7 +207,10 @@ async def token(
     room_name = body.room or settings.agent.default_room
 
     if len(room_name) > 64 or not room_name.replace("-", "").replace("_", "").isalnum():
-        raise HTTPException(status_code=422, detail="Invalid room name: must be <= 64 characters, alphanumeric with - and _")
+        raise HTTPException(status_code=422, detail={
+            "error_code": "TOKEN_INVALID_ROOM",
+            "message": "Invalid room name: must be <= 64 characters, alphanumeric with - and _",
+        })
 
     identity = (
         body.identity.strip()
@@ -203,14 +219,28 @@ async def token(
     )
 
     if len(identity) > 64 or not identity.replace("-", "").replace("_", "").isalnum():
-        raise HTTPException(status_code=422, detail="Invalid identity: must be <= 64 characters, alphanumeric with - and _")
+        raise HTTPException(status_code=422, detail={
+            "error_code": "TOKEN_INVALID_IDENTITY",
+            "message": "Invalid identity: must be <= 64 characters, alphanumeric with - and _",
+        })
 
     # Store clinic_id in room metadata so the agent knows which clinic to save data for
     room_name = f"{clinic_id}_{room_name}"
 
     # Create room and dispatch agent before returning the token
     # This ensures the user never connects to an empty room
-    await create_room_and_dispatch(room_name)
+    try:
+        await create_room_and_dispatch(room_name)
+    except Exception as exc:
+        logger.error("Failed to create room or dispatch agent for '%s': %s", room_name, exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "error_code": "TOKEN_ROOM_FAILED",
+                "message": "Unable to prepare your consultation room. Please try again.",
+            },
+            headers={"Retry-After": "5"},
+        ) from exc
 
     jwt = (
         api.AccessToken(settings.livekit.api_key, settings.livekit.api_secret)
