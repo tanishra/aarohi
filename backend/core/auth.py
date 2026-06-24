@@ -41,7 +41,10 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 def get_current_clinic_id(token: str = Depends(oauth2_scheme)) -> str:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        detail={
+            "error_code": "AUTH_INVALID_TOKEN",
+            "message": "Could not validate credentials",
+        },
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
