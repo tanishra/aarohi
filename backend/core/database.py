@@ -131,6 +131,9 @@ def get_intake(intake_id: int, from_local: bool = False) -> Optional[dict]:
             data = intake.model_dump()
             data["name"] = decrypt_data(data["name"]) or ""
             data["contact"] = decrypt_data(data["contact"]) or ""
+            data["complaint"] = decrypt_data(data["complaint"]) or ""
+            data["medications"] = decrypt_data(data["medications"]) or ""
+            data["conditions"] = decrypt_data(data["conditions"]) or ""
             elapsed = time.monotonic() - start
             logger.info("Intake %d retrieved in %.3fs", intake_id, elapsed)
             return data
