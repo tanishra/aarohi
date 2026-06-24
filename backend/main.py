@@ -50,16 +50,6 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-# Start Prometheus metrics HTTP server (separate thread)
-_prometheus_port = int(os.getenv("METRICS_PORT", "9090"))
-try:
-    from prometheus_client import start_http_server as _start_metrics
-
-    _start_metrics(_prometheus_port)
-    logger.info("Metrics HTTP server started on port %d", _prometheus_port)
-except (OSError, ImportError) as exc:
-    logger.warning("Prometheus metrics server not available: %s", exc)
-
 # Graceful shutdown flag
 _shutting_down = False
 
@@ -78,11 +68,6 @@ try:
 except Exception as exc:
     logger.warning("Database init failed: %s", exc)
 
-# High-level Agent Server Pattern
-server = AgentServer()
-
-
-@server.rtc_session(agent_name="voice-assistant")
 async def entrypoint(ctx: JobContext) -> None:
     if _shutting_down:
         logger.warning("Server shutting down, rejecting new session")
@@ -199,4 +184,6 @@ async def entrypoint(ctx: JobContext) -> None:
 
 
 if __name__ == "__main__":
+    server = AgentServer()
+    server.rtc_session(agent_name="voice-assistant")(entrypoint)
     agents.cli.run_app(server)
