@@ -10,6 +10,6 @@ os.environ["OPENAI_API_KEY"] = "sk-test-openai"
 os.environ["DEEPGRAM_API_KEY"] = "test-deepgram"
 os.environ["SARVAM_API_KEY"] = "sk-test-sarvam"
 os.environ["LOCAL_DB_PATH"] = ":memory:"
-os.environ.pop("CLOUD_DB_URL", None)
+os.environ.pop("DATABASE_URL", None)
 
 import pytest

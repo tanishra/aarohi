@@ -93,7 +93,7 @@ Aarohi is fully containerized. You can spin up the entire stack (Frontend, FastA
    LIVEKIT_API_KEY=your_key
    LIVEKIT_API_SECRET=your_secret
    ENCRYPTION_SECRET_KEY=your_encryption_key
-   CLOUD_DB_URL=postgresql://... # Optional
+    DATABASE_URL=postgresql://... # Optional cloud DB
 
     # Frontend
     NEXT_PUBLIC_SPATIUS_APP_ID=your_app_id

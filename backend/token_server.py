@@ -31,6 +31,9 @@ from config.settings import load_settings
 from core.database import init_db, sync_local_to_cloud, engine_local, Clinic
 from core.auth import verify_password, get_password_hash, create_access_token, get_current_clinic_id, ACCESS_TOKEN_EXPIRE_MINUTES
 
+from dotenv import load_dotenv
+
+load_dotenv()
 configure_logging()
 logger = logging.getLogger(__name__)
 
@@ -63,6 +66,8 @@ MAX_BODY_SIZE = 1_048_576  # 1 MB
 
 @app.middleware("http")
 async def limit_body_size(request: Request, call_next):
+    if request.headers.get("transfer-encoding", "").lower() == "chunked":
+        return Response(status_code=413, content="Chunked transfer encoding not allowed")
     content_length = request.headers.get("content-length")
     if content_length:
         try:
