@@ -115,7 +115,7 @@ class AarohiTools:
             if len(_field_val) > _max_field_len:
                 return f"ERROR: {_field_name} exceeds maximum length. Please provide a shorter value."
 
-        conditions_str = ", ".join(known_conditions) if known_conditions else "None"
+        conditions_str = known_conditions if known_conditions else "None"
         medications_str = medications if medications else "None"
         data = {
             "patient_name": patient_name,
