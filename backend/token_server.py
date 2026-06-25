@@ -52,7 +52,10 @@ async def background_sync_task():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
+    try:
+        init_db()
+    except Exception as exc:
+        logger.error("Database init failed: %s", exc)
     task = asyncio.create_task(background_sync_task())
     yield
     task.cancel()
@@ -137,6 +140,7 @@ async def register(request: Request, body: RegisterRequest):
 # In-memory failed login attempt tracker
 # {username: (attempt_count, locked_until_timestamp)}
 _failed_logins: dict[str, tuple[int, float]] = defaultdict(lambda: (0, 0.0))
+_login_lock = asyncio.Lock()
 _MAX_LOGIN_ATTEMPTS = 5
 _LOCKOUT_SECONDS = 900  # 15 minutes
 
@@ -145,38 +149,39 @@ _LOCKOUT_SECONDS = 900  # 15 minutes
 async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
     """Authenticate clinic and return a JWT."""
     username = form_data.username
-    attempts, locked_until = _failed_logins[username]
-    now = time.monotonic()
+    async with _login_lock:
+        attempts, locked_until = _failed_logins[username]
+        now = time.monotonic()
 
-    if locked_until > now:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail={
-                "error_code": "AUTH_LOCKED",
-                "message": f"Account locked. Try again in {int(locked_until - now)} seconds.",
-            },
-        )
-
-    with Session(engine_local) as session:
-        clinic = session.get(Clinic, username)
-        if not clinic or not verify_password(form_data.password, clinic.hashed_password):
-            attempts += 1
-            if attempts >= _MAX_LOGIN_ATTEMPTS:
-                _failed_logins[username] = (0, now + _LOCKOUT_SECONDS)
-                logger.warning("Account '%s' locked for %ds after %d failed attempts", username, _LOCKOUT_SECONDS, attempts)
-            else:
-                _failed_logins[username] = (attempts, 0.0)
+        if locked_until > now:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail={
-                    "error_code": "AUTH_INVALID_CREDENTIALS",
-                    "message": "Incorrect username or password",
+                    "error_code": "AUTH_LOCKED",
+                    "message": f"Account locked. Try again in {int(locked_until - now)} seconds.",
                 },
-                headers={"WWW-Authenticate": "Bearer"},
             )
 
-    # Successful login — reset counter
-    _failed_logins[username] = (0, 0.0)
+        with Session(engine_local) as session:
+            clinic = session.get(Clinic, username)
+            if not clinic or not verify_password(form_data.password, clinic.hashed_password):
+                attempts += 1
+                if attempts >= _MAX_LOGIN_ATTEMPTS:
+                    _failed_logins[username] = (0, now + _LOCKOUT_SECONDS)
+                    logger.warning("Account '%s' locked for %ds after %d failed attempts", username, _LOCKOUT_SECONDS, attempts)
+                else:
+                    _failed_logins[username] = (attempts, 0.0)
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail={
+                        "error_code": "AUTH_INVALID_CREDENTIALS",
+                        "message": "Incorrect username or password",
+                    },
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+
+        # Successful login — reset counter
+        _failed_logins[username] = (0, 0.0)
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(

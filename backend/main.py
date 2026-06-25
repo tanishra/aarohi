@@ -57,6 +57,13 @@ _shutting_down = False
 def _handle_sigterm(signum: int, frame) -> None:
     global _shutting_down
     _shutting_down = True
+    try:
+        asyncio.get_running_loop().call_soon(_report_sigterm)
+    except RuntimeError:
+        pass
+
+
+def _report_sigterm():
     logger.warning("Received SIGTERM, shutting down gracefully...")
 
 
@@ -66,7 +73,7 @@ signal.signal(signal.SIGTERM, _handle_sigterm)
 try:
     init_db()
 except Exception as exc:
-    logger.warning("Database init failed: %s", exc)
+    logger.error("Database init failed: %s", exc)
 
 async def entrypoint(ctx: JobContext) -> None:
     if _shutting_down:
