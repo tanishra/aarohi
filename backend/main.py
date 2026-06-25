@@ -17,6 +17,9 @@ if _backend_dir not in sys.path:
 
 from config.logging import configure_logging, session_id_var
 
+# Load environment variables from .env first so logging config is picked up
+load_dotenv()
+
 configure_logging()
 
 from config.settings import load_settings
@@ -44,9 +47,6 @@ from livekit.agents.voice.turn import (
 from livekit.plugins import deepgram, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 from livekit.plugins.spatius import AvatarSession
-
-# Load environment variables from .env
-load_dotenv()
 
 logger = logging.getLogger(__name__)
 
