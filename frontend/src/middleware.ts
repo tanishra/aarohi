@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { decodeJwt } from 'jose';
+import { jwtVerify } from 'jose';
 
 // Protect the intake and success routes
 export default async function proxy(request: NextRequest) {
@@ -13,17 +13,16 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // If token exists, verify it's not expired
+  // If token exists, verify signature and expiry
   if (token && (isProtectedRoute || isAuthRoute)) {
     try {
-      const payload = decodeJwt(token.value);
-      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-        const response = NextResponse.redirect(new URL('/login', request.url));
-        response.cookies.delete('aarohi_token');
-        return response;
+      const secret = new TextEncoder().encode(process.env.JWT_SECRET_KEY || '');
+      if (!secret.length) {
+        return NextResponse.redirect(new URL('/login', request.url));
       }
+      await jwtVerify(token.value, secret);
     } catch {
-      // Malformed token — treat as logged out
+      // Expired, malformed, or forged token — treat as logged out
       const response = NextResponse.redirect(new URL('/login', request.url));
       response.cookies.delete('aarohi_token');
       return response;
