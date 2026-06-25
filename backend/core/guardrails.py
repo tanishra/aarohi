@@ -15,7 +15,6 @@ BLOCKED_PATTERNS: list[tuple[re.Pattern[str], str]] = [
 
 # Patterns for harmful medical content
 HARMFUL_PATTERNS: list[tuple[re.Pattern[str], str]] = [
-    (re.compile(r"\b(?:take|consume|inject|administer)\s+\d+\s*(?:mg|ml|g|mcg|tablet|capsule)", re.IGNORECASE), "dosage instruction"),
     (re.compile(r"\b(?:overdose|suicide|self-harm|selfharm|self.harm)\b", re.IGNORECASE), "self-harm content"),
     (re.compile(r"\b(?:diagnosis|diagnose)\s+(?:you\s+(?:have|might have|may have)|your\s+(?:condition|illness|disease))", re.IGNORECASE), "unsolicited diagnosis"),
 ]

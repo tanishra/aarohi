@@ -41,10 +41,10 @@ def test_pan_card_blocked():
     assert cat == "pii"
 
 
-def test_dosage_blocked():
-    is_safe, cat, desc = validate_llm_output("Please take 50mg of aspirin")
-    assert is_safe is False
-    assert cat == "harmful"
+def test_medication_summary_not_blocked():
+    # Aarohi reads back patient medication — should NOT be blocked
+    is_safe, _, _ = validate_llm_output("Please take 50mg of aspirin")
+    assert is_safe is True
 
 
 def test_overdose_blocked():
