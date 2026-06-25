@@ -31,7 +31,7 @@ def _exec_with_retry(fn, max_retries=3, base_delay=0.5):
     raise last_error  # pragma: no cover
 
 # Cloud Database (PostgreSQL, MySQL, etc.)
-CLOUD_DB_URL = os.getenv("CLOUD_DB_URL")
+CLOUD_DB_URL = os.getenv("DATABASE_URL")
 engine_cloud = None
 if CLOUD_DB_URL:
     try:
@@ -145,7 +145,7 @@ def get_intake(intake_id: int, from_local: bool = False) -> Optional[dict]:
 def sync_local_to_cloud():
     """Background task to push pending local records to the cloud."""
     if not engine_cloud:
-        logger.debug("No CLOUD_DB_URL configured. Skipping sync.")
+        logger.debug("No DATABASE_URL configured. Skipping cloud sync.")
         return
 
     start = time.monotonic()
